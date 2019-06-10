@@ -1,0 +1,9 @@
+1. basic introduction  
+  a. statistics_vgg16_v1.py: the source file of computing the statistical items on VGG16.
+  b. tools.py: the source file providing the functions of image preprocessing and file reading/writing.
+  c. list_samples.txt: the filenames of the samples of input images for statistical analysis.
+  d. slim: the source codes of slim library. VGG16 is defined in "./slim/nets/vgg.py" (vgg_16_decomposed).
+  e. samples: folder of input images. 
+  f. please download "vgg_16_2016_08_28.tar.gz" from "https://github.com/tensorflow/models/tree/master/research/slim", then extract the .tar.gz file and save it to same directory.
+  
+  
