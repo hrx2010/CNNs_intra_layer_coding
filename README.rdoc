@@ -4,6 +4,13 @@
   c. list_samples.txt: the filenames of the samples of input images for statistical analysis.
   d. slim: the source codes of slim library. VGG16 is defined in "./slim/nets/vgg.py" (vgg_16_decomposed).
   e. samples: folder of input images. 
-  f. please download "vgg_16_2016_08_28.tar.gz" from "https://github.com/tensorflow/models/tree/master/research/slim", then extract the .tar.gz file and save it to same directory.
+  f. please download "vgg_16_2016_08_28.tar.gz" from "https://github.com/tensorflow/models/tree/master/research/slim", then extract the ".tar.gz" file and save it to same directory.
   
   
+2.  preparation
+  a. install cuda
+  b. install tensorflow
+  
+
+3. command line
+  a. python statistics_vgg16_v1.py: performing the computation of statistical items.
