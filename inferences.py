@@ -10,6 +10,7 @@ sys.path.append(SLIM_PATH)
 ground_truth_file='imagenet_2012_validation_synset_labels_new_index.txt'
 batch_size=100
 number_validation_images=1000
+# directory of validation dataset. Please download ImageNet 2010 VAL dataset (totally 50,000 images).
 directory_validation_dataset='/home/wangzhe/Documents/data/ImageNet2012/val/'
 
 
