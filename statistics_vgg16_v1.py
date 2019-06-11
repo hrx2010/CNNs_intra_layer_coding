@@ -22,7 +22,8 @@ num_conv_layers = 13
 # this checkpoint file is very big (>500 MB). Please download "vgg_16_2016_08_28.tar.gz" from here "https://github.com/tensorflow/models/tree/master/research/slim".
 # then extract "vgg_16_2016_08_28.tar.gz" and put it to the same directory of this source file. 
 checkpoint_file = './vgg_16.ckpt' 
-
+# inference flag. If ture, then run inference at the end. Otherwise not.
+flag_inference = True
 
 # create tensorflow graph of VGG16 
 with slim.arg_scope(vgg_arg_scope()):
@@ -109,4 +110,7 @@ for i in range(num_conv_layers):
 	print('layer %d, variance of activations = %.12f' % (i , activations_variance))
 	#print((activations_PSD.shape))
 
-
+if flag_inference == True:
+	top_1_accuracy, top_5_accuracy = run_inference_VGG16(sess , input_string , probabilities)
+	print('Summary: top 1 accuracy = %.2f, top 5 accuracy = %.2f.' % (top_1_accuracy, top_5_accuracy))
+	
