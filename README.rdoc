@@ -5,6 +5,8 @@
   d.  slim: the source codes of slim library. VGG16 is defined in "./slim/nets/vgg.py" (vgg_16_decomposed).
   e.  samples: folder of input images. 
   f.  please download "vgg_16_2016_08_28.tar.gz" from "https://github.com/tensorflow/models/tree/master/research/slim", then extract the ".tar.gz" file and save it to same directory.
+  g.  inferences.py: the source file to run inference on ImageNet. 
+  h.  pareto_optimal_bit_allocation: the source files to optimize bit allocation under Pareto-condition.
   
 
 [Preparation]
