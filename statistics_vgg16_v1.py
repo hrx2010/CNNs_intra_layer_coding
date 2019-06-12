@@ -32,7 +32,7 @@ with slim.arg_scope(vgg_arg_scope()):
 	# preprocess the input image - JPEG decoding, resizing, etc.
 	processed_images = tensor_preprocessed_input_images(input_string)
 	# define VGG16 model. 'vgg_activations' contains all the intermediate outputs of conv layers before RELU.
-	logits, _, vgg_activations = vgg_16_decomposed(processed_images, num_classes=1000, is_training=False)
+	logits, _, vgg_activations, vgg_activations_after_relu = vgg_16_decomposed(processed_images, num_classes=1000, is_training=False)
 	# compute prediction scores for image classification 
 	probabilities = tf.nn.softmax(logits)
 
@@ -82,9 +82,21 @@ for i in range(num_conv_layers):
 	for j in range(len(input_images)):
 		# get the path of input image 
 		img_path = SAMPLES_PATH + input_images[j] 
-		# get the activations of the i-th conv layer before RELU 
-		activation_values = sess.run(vgg_activations[i] , feed_dict={input_string:img_path})
+		
+		# get the activations of the i-th conv layer before RELU
+		# for the first layer, input tensor is input image
+		input_tensor = input_string
+		input_tensor_value = img_path
+
+		# for other layers, input tensor is last layer's output (after relu) 
+		if (i > 0): 
+			input_tensor = vgg_activations_after_relu[i-1]
+			input_tensor_value = sess.run(vgg_activations_after_relu[i-1] , feed_dict={input_string:img_path})
+
+		# obtain activations (before relu) in this layer
+		activation_values = sess.run(vgg_activations[i] , feed_dict={input_tensor:input_tensor_value})
 		activation_values_reduced = np.squeeze(activation_values , axis=0)
+		
 		# get the dimensions of activations
 		[h, w, d] = activation_values_reduced.shape
 	
