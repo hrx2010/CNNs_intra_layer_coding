@@ -88,7 +88,7 @@ for i in range(num_conv_layers):
 		input_tensor = input_string
 		input_tensor_value = img_path
 
-		# for other layers, input tensor is last layer's output (after relu) 
+		# for layer i (i > 0), input tensor is (i-1)th layer's output (after relu) 
 		if (i > 0): 
 			input_tensor = vgg_activations_after_relu[i-1]
 			input_tensor_value = sess.run(vgg_activations_after_relu[i-1] , feed_dict={input_string:img_path})
