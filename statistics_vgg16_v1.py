@@ -10,7 +10,7 @@ sys.path.append(SLIM_PATH)
 from nets.vgg import *
 from preprocessing import vgg_preprocessing 
 from tools import *
-
+from inferences import *
 
 # the directory of sample images.
 SAMPLES_PATH = './samples/'
