@@ -586,7 +586,7 @@ def vgg_16_decomposed(inputs,
           net_final = tf.squeeze(net_conv16, [1, 2], name='fc8/squeezed')
         end_points[sc.name + '/fc8'] = net_final
 
-      return net_final, end_points, [net_conv1_before_relu, net_conv2_before_relu, net_conv3_before_relu, net_conv4_before_relu, net_conv5_before_relu, net_conv6_before_relu, net_conv7_before_relu, net_conv8_before_relu, net_conv9_before_relu, net_conv10_before_relu, net_conv11_before_relu, net_conv12_before_relu, net_conv13_before_relu, net_conv14_before_relu, net_conv15_before_relu, net_conv16]
+      return net_final, end_points, [net_conv1_before_relu, net_conv2_before_relu, net_conv3_before_relu, net_conv4_before_relu, net_conv5_before_relu, net_conv6_before_relu, net_conv7_before_relu, net_conv8_before_relu, net_conv9_before_relu, net_conv10_before_relu, net_conv11_before_relu, net_conv12_before_relu, net_conv13_before_relu, net_conv14_before_relu, net_conv15_before_relu, net_conv16], [net_conv1, net_conv2, net_conv3, net_conv4, net_conv5, net_conv6, net_conv7, net_conv8, net_conv9, net_conv10, net_conv11, net_conv12, net_conv13, net_conv14, net_conv15, net_conv16]
 
 vgg_16.default_image_size = 224
 
