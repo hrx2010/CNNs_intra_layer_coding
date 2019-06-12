@@ -32,8 +32,9 @@ with slim.arg_scope(vgg_arg_scope()):
 	# preprocess the input image - JPEG decoding, resizing, etc.
 	processed_images = tensor_preprocessed_input_images(input_string)
 	# define VGG16 model. 'vgg_activations' contains all the intermediate outputs of conv layers before RELU.
-	_, _, vgg_activations = vgg_16_decomposed(processed_images, num_classes=1000, is_training=False)
-
+	logits, _, vgg_activations = vgg_16_decomposed(processed_images, num_classes=1000, is_training=False)
+	# compute prediction scores for image classification 
+	probabilities = tf.nn.softmax(logits)
 
 # create tensorflow session
 config = tf.ConfigProto()
