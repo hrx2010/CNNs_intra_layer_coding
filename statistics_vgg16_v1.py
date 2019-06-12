@@ -65,17 +65,11 @@ for i in range(num_conv_layers):
 	for j in range(n_input):
 		# extract weights of input j.
 		H = weight_values[:,:,j,:]
-		# define R_H.
-		R_H = np.zeros(shape=(fh , fw))
 		# calculate R_H.
-		for r in range(-1 , 2 , 1):
-			for c in range(-1 , 2 , 1):
-				R_H[r + 1][c + 1] = np.mean(np.multiply(H , np.roll(H , [r,c] , axis=[0,1])))
-		# calcilate L_H
-		L_H = np.real(np.roll(np.fft.fft2(np.roll(R_H , [-1,-1] , axis=[0,1])) , [1,1] , axis=[0,1]))
+		R_H = np.mean(np.square(np.abs(np.fft.fft2(H,axes=(0,1)))), axis=2)
 		# output L_H
 		print('layer %d, n_input %d, LH = ' % (i , j))
-		print(L_H)		
+		print(R_H)		
 
 	# define the statistical items of activations.
 	activations_mean = 0.0 
