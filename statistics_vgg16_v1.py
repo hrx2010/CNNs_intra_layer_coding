@@ -7,6 +7,7 @@ import sys
 SLIM_PATH = './slim/'
 sys.path.append(SLIM_PATH)
 
+from scipy import interpolate
 from nets.vgg import *
 from preprocessing import vgg_preprocessing 
 from tools import *
@@ -106,6 +107,11 @@ for i in range(num_conv_layers):
 			activations_mean += np.mean(sub_arrays)
 			activations_variance += np.var(sub_arrays)
 			activations_PSD += np.square(np.absolute(np.fft.fft2(sub_arrays)))
+
+        # resample the PSD on an evenly-spaced 3x3 grid
+        cols = np.round(np.arange(0,fw)*(w/fw)).astype(int)
+        rows = np.round(np.arange(0,fh)*(h/fh)).astype(int)
+        activations_PSD = activations_PSD[np.ix_(cols,rows)]
 
 	# calculate mean, variance and PSD
 	activations_mean = activations_mean / (float(int(n_output))) / (float(len(input_images)))
