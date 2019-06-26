@@ -8,6 +8,7 @@ SLIM_PATH = './slim/'
 sys.path.append(SLIM_PATH)
 
 from scipy import interpolate
+from scipy.io import savemat
 from nets.vgg import *
 from preprocessing import vgg_preprocessing 
 from tools import *
@@ -24,7 +25,7 @@ num_conv_layers = 13
 # then extract "vgg_16_2016_08_28.tar.gz" and put it to the same directory of this source file. 
 checkpoint_file = './vgg_16.ckpt' 
 # inference flag. If ture, then run inference at the end. Otherwise not.
-flag_inference = True
+flag_inference = False
 
 # create tensorflow graph of VGG16 
 with slim.arg_scope(vgg_arg_scope()):
@@ -54,19 +55,22 @@ input_images = read_samples_from_file('list_samples.txt')
 # extract all conv layers' weights. vgg_weights[i] denotes the weights of i-th conv layer. 
 vgg_weights = get_all_weights_variables(variables_to_restore)
 
+weight_values = np.zeros((num_conv_layers,), dtype=np.object)
 
 # do the statistics for each conv layer.
 for i in range(num_conv_layers):
 
 	# get the tensor of the weights in conv layer i.  
-	weight_values = sess.run(vgg_weights[i])
-	# get the dimensions of the tensor where fh * fw denotes the kernel size, n_input denotes the number of inputs and n_output denotes the number of outputs.
-	[fh, fw, n_input, n_output] = weight_values.shape
+	weight_values[i] = sess.run(vgg_weights[i])
+
+	# get the dimensions of the tensor where fh * fw denotes the kernel size, 
+        # n_input denotes the number of inputs and n_output denotes the number of outputs.
+	[fh, fw, n_input, n_output] = weight_values[i].shape
 
 	# calculate the statistical items of weights for each input.
 	for j in range(n_input):
 		# extract weights of input j.
-		H = weight_values[:,:,j,:]
+		H = weight_values[i][:,:,j,:]
 		# calculate R_H.
 		R_H = np.mean(np.square(np.abs(np.fft.fft2(H,axes=(0,1)))), axis=2)
 		# output L_H
@@ -122,6 +126,8 @@ for i in range(num_conv_layers):
 	print('layer %d, mean of activations = %.12f' % (i , activations_mean))
 	print('layer %d, variance of activations = %.12f' % (i , activations_variance))
 	#print((activations_PSD.shape))
+
+savemat('weight_values',{'weight_values' : weight_values});
 
 if flag_inference == True:
 	top_1_accuracy, top_5_accuracy = run_inference_VGG16(sess , input_string , probabilities)
