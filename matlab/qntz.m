@@ -5,11 +5,11 @@ close all;
 % specify the filepath to ILSVRC test images. Number of test files to
 % predict can be set manually or set to 0 to predict all files in the
 % datastore (not recommended)
-arch = 'vgg16';
+archname = 'vgg16';
 filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
 testsize = 32;
 
-switch arch
+switch archname
   case 'alexnet'
     readerfun = @read227x227;
     neural = alexnet;
@@ -35,7 +35,7 @@ steps = 32;
 hist_coded = zeros(testsize,steps,q)*NaN;
 hist_Y_sse = zeros(testsize,steps,q)*NaN;
 
-for f = 1:testsize%
+parfor f = 1:testsize%
     X = imds.readimage(f);
     Y = predict(neural,X);
     Y_ssq = sum(Y(:).^2);
@@ -53,11 +53,11 @@ for f = 1:testsize%
             % quantize each of the q slices
             convq = quantize(convw,delta);
             biasq = quantize(biasw,delta);
-            % assemble the network again
+            % assemble the net using layers
             quant(l).Weights(:,:,:,i) = convq;
             quant(l).Bias(i) = biasq;
             net = assembleNetwork(quant);
-            % run the prediction
+            % run the prediction on image X
             Y_hat = predict(net,X);
             Y_sse = sum((Y_hat(:) - Y(:)).^2);
             coded = qentropy([convq(:);biasq]);
