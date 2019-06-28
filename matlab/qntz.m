@@ -1,22 +1,39 @@
 clear all;
 close all;
 
-imds = imageDatastore('~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG','ReadFcn',@vgg16reader);
+% Choose from: 'alexnet', 'vgg16' and 'resnet50'
+arch = 'vgg16;' 
+% Specify the filepath to ILSVRC test images
+filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
+% Number of test files to perform prediction. Set to 0 to test all
+% files (not recommended)
+testsize = 32;
 
-neural = vgg16;
-layers = [neural.Layers(1:39);regressionLayer('Name','output')];
+switch arch
+  case 'alexnet'
+    readerfun = @alexnetreader;
+    neural = alexnet;
+  case 'vgg16'
+    readerfun = @vgg16reader;
+    neural = vgg16;
+  case 'resnet50'
+    readerfun = @vgg16reader;
+    neural = resnet50;
+end
+
+imds = imageDatastore(filepath,'ReadFcn',readerfun);
+layers = [neural.Layers(1:end-2);regressionLayer('Name','output')];
 neural = assembleNetwork(layers);
 
 l = 2; %layer to get the RD curves for
 [h,w,p,q] = size(layers(l).Weights);
 
 steps = 32;
-files = length(imds.Files);
-hist_coded = zeros(files,steps,q)*NaN;
-hist_Y_sse = zeros(files,steps,q)*NaN;
+hist_coded = zeros(testsize,steps,q)*NaN;
+hist_Y_sse = zeros(testsize,steps,q)*NaN;
 norm2 = 0;
 
-for f = 1:32%
+for f = 1:testsize%
     X = imds.readimage(f);
     Y = predict(neural,X);
     Y_ssq = sum(Y(:).^2);
