@@ -11,11 +11,12 @@ l = 2; %layer to get the RD curves for
 [h,w,p,q] = size(layers(l).Weights);
 
 steps = 32;
-hist_coded = zeros(steps,q)*NaN;
-hist_relse = zeros(steps,q);
+files = length(imds.Files);
+hist_coded = zeros(files,steps,q)*NaN;
+hist_Y_sse = zeros(files,steps,q)*NaN;
 norm2 = 0;
 
-for f = 1:length(imds.Files)
+for f = 1:32%
     X = imds.readimage(f);
     Y = predict(neural,X);
     Y_ssq = sum(Y(:).^2);
@@ -40,15 +41,15 @@ for f = 1:length(imds.Files)
             net = assembleNetwork(quant);
             % run the prediction
             Y_hat = predict(net,X);
-            error = sum((Y_hat(:) - Y(:)).^2);
+            Y_sse = sum((Y_hat(:) - Y(:)).^2);
             coded = qentropy([convq(:);biasq]);
             
-            hist_coded(j,i) = coded;
-            hist_relse(j,i) = hist_relse(j,i) + error;
+            hist_coded(f,j,i) = coded;
+            hist_Y_sse(f,j,i) = Y_sse;
             
             [~,filename] = fileparts(imds.Files{f});
-            disp(sprintf('%s, output %3d, delta: %5.2e, relsse: %5.2e, rate: %5.2e',...
-                         filename, i, delta, sqrt(error/Y_ssq), coded));
+            disp(sprintf('%s | slice %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
+                         filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
         end
     end
 end    
