@@ -7,11 +7,12 @@ neural = vgg16;
 layers = [neural.Layers(1:39);regressionLayer('Name','output')];
 neural = assembleNetwork(layers);
 
-l = 2;
+l = 2; %layer to get the RD curves for
 [h,w,p,q] = size(layers(l).Weights);
 
-hist_coded = zeros(16,q)*NaN;
-hist_relse = zeros(16,q);
+steps = 32;
+hist_coded = zeros(steps,q)*NaN;
+hist_relse = zeros(steps,q);
 norm2 = 0;
 
 for f = 1:length(imds.Files)
@@ -19,17 +20,17 @@ for f = 1:length(imds.Files)
     Y = predict(neural,X);
     Y_ssq = sum(Y(:).^2);
     norm2 = norm2 + Y_ssq;
-    for i = 1:1 % iterate over output channels
+    for i = 1:q % iterate over output channels
         quant = layers;
         convw = quant(l).Weights(:,:,:,i);
         biasw = quant(l).Bias(i);
         scale = 2^floor(log2(std(convw(:))/1024));
         coded = Inf;
-        for j = 1:16
+        for j = 1:steps
             if coded == 0
                 break
             end
-            delta = scale*2^(j-1);
+            delta = scale*sqrt(2^(j-1));
             % quantize each of the q slices
             convq = quantize(convw,delta);
             biasq = quantize(biasw,delta);
