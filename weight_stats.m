@@ -5,9 +5,8 @@ load weight_values;
 
 
 l = 12; %layer
-m = 2; %row
-n = 2; %col
-p = 1; %pag
+m = 2;  %row
+n = 2;  %col
 
 % IM IM RE
 % IM DC RE
@@ -40,7 +39,7 @@ x(x>bin_edges(end)) = bin_edges(end);
 histcount = histcounts(x,bin_edges);
 plot(bin_point,histcount);
 xlabel(sprintf('Layer %d. Coeff. %d,%d.', l, m, n));
-ylabel('Density');
+ylabel('Frequency');
 %histogram(x,bin_edges','Normalization','pdf');
 disp(sprintf('kurtosis: %f', kurtosis(x)));
 disp(sprintf('skewness: %f', skewness(x)));
