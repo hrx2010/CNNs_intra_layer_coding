@@ -7,7 +7,8 @@ close all;
 % datastore (not recommended)
 archname = 'alexnet';
 filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
-testsize = 32;
+testsize = 8;
+maxsteps = 64;
 
 switch archname
   case 'alexnet'
@@ -31,7 +32,6 @@ neural = assembleNetwork(layers);
 l = findconv(layers); % or specify the layer number directly
 [h,w,p,q] = size(layers(l).Weights);
 
-maxsteps = 64;
 hist_coded = zeros(maxsteps,q,testsize)*NaN;
 hist_Y_sse = zeros(maxsteps,q,testsize)*NaN;
 
@@ -43,7 +43,7 @@ parfor f = 1:testsize%
         quant = layers;
         convw = quant(l).Weights(:,:,:,i);
         biasw = quant(l).Bias(i);
-        scale = 2^floor(log2(std(convw(:))/1024));
+        scale = 2^floor(log2(sqrt(mean(convw(:).^2))/1024));
         coded = Inf;
         for j = 1:maxsteps
             if coded == 0
@@ -60,7 +60,7 @@ parfor f = 1:testsize%
             % run the prediction on image X
             Y_hat = predict(net,X);
             Y_sse = sum((Y_hat(:) - Y(:)).^2);
-            coded = qentropy([convq(:);biasq]);
+            coded = qentropy([convq(:);biasq(:)]);
             
             hist_coded(j,i,f) = coded;
             hist_Y_sse(j,i,f) = Y_sse;
@@ -72,4 +72,4 @@ parfor f = 1:testsize%
     end
 end    
 
-save(archname,'hist_coded','hist_Y_sse');
+%save(archname,'hist_coded','hist_Y_sse');
