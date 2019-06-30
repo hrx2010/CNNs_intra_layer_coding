@@ -5,7 +5,7 @@ close all;
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
-archname = 'alexnet';
+archname = 'densenet201';
 filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
 testsize = 8;
 maxsteps = 64;
@@ -29,7 +29,7 @@ switch archname
 end
 
 imds = imageDatastore(filepath,'ReadFcn',readerfun);
-layers = [neural.Layers(1:end-2);regressionLayer('Name','output')];
+layers = removeLastLayer(neural);
 neural = assembleNetwork(layers);
 
 l = findconv(layers); % or specify the layer number directly
