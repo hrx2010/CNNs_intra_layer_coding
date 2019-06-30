@@ -5,7 +5,7 @@ close all;
 % specify the filepath to ILSVRC test images. Number of test files to
 % predict can be set manually or set to 0 to predict all files in the
 % datastore (not recommended)
-archname = 'vgg16';
+archname = 'alexnet';
 filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
 testsize = 32;
 
@@ -71,3 +71,5 @@ parfor f = 1:testsize%
         end
     end
 end    
+
+save(archname,'hist_coded','hist_Y_sse');
