@@ -1,0 +1,47 @@
+0. Overview
+
+Some MATLAB code to get the R-D curves for "separate bit-allocation
+for different slices of the layer. The main launcher code is called
+qntz.m. The MATLAB currently supports alexnet, vgg16, resnet50, and
+mobilenetv2.
+
+1. Some prerequisites:
+
+Need to have installed the alexnet, vgg16, resnet50 and mobilenetv2
+pre-trained models using the MATLAB add-on explorer. The weights of
+the MATLAB pre-trained models are identical to the weights from the
+Tensorflow SLIM library.
+
+
+2. Running the code. Simply type
+
+>> qntz 
+
+at the MATLAB prompt should produce output similar to the following:
+
+alexnet ILSVRC2012_test_00000001 | slice 005, delta: 4.32e-05, relerr: 2.96e-06, rate: 8.40e+00
+alexnet ILSVRC2012_test_00000002 | slice 005, delta: 3.05e-05, relerr: 6.41e-06, rate: 8.45e+00
+alexnet ILSVRC2012_test_00000002 | slice 005, delta: 4.32e-05, relerr: 1.91e-06, rate: 8.40e+00
+alexnet ILSVRC2012_test_00000003 | slice 005, delta: 3.05e-05, relerr: 6.83e-06, rate: 8.45e+00
+alexnet ILSVRC2012_test_00000003 | slice 005, delta: 4.32e-05, relerr: 4.63e-06, rate: 8.40e+00
+alexnet ILSVRC2012_test_00000004 | slice 005, delta: 3.05e-05, relerr: 5.39e-06, rate: 8.45e+00
+
+- the first field is the name of the network being tested. 
+
+— the 2nd field is the test file name (without the JPEG extension).
+
+— slice refers to the index of the last dimension (the output)
+
+— delta is the quantization step size. Currently I start delta from
+  a very small value (1/1024 of the std of the coefficients in that
+  slice) and decrease it in factors of √2 every time.
+
+— relerr is √(Y_sse/Y_ssq) or the relative error norm, at the final
+  layer, prior to softmax. I store the sum of squares of the error.
+
+— rate is the entropy of the quantization indices. This rate can be
+  a bit misleading because I do not take the overheads (for storing
+  histograms etc) into account yet. But then, there are no overload
+  bins and no deadzone so the quantizer is not so efficient. If you
+  want, you can incorporate the dead-zone into the quantization
+  function.
