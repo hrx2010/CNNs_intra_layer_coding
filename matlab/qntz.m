@@ -1,10 +1,10 @@
 clear all;
 close all;
 
-% Choose from: 'alexnet', 'vgg16', 'resnet50', and 'mobilenetv2', and
-% specify the filepath to ILSVRC test images. Number of test files to
-% predict can be set manually or set to 0 to predict all files in the
-% datastore (not recommended)
+% Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
+% 'resnet50', and specify the filepath for ILSVRC test images. Number
+% of test files to predict can be set manually or set to 0 to predict
+% all files in the datastore (not recommended)
 archname = 'alexnet';
 filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
 testsize = 8;
@@ -20,6 +20,9 @@ switch archname
   case 'resnet50'
     readerfun = @read224x224;
     neural = resnet50;
+  case 'densenet201'
+    readerfun = @read224x224;
+    neural = densenet201;
   case 'mobilenetv2'
     readerfun = @read224x224;
     neural = mobilenetv2;
