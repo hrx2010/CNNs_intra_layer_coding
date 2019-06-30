@@ -31,9 +31,9 @@ neural = assembleNetwork(layers);
 l = findconv(layers); % or specify the layer number directly
 [h,w,p,q] = size(layers(l).Weights);
 
-steps = 32;
-hist_coded = zeros(testsize,steps,q)*NaN;
-hist_Y_sse = zeros(testsize,steps,q)*NaN;
+maxsteps = 64;
+hist_coded = zeros(maxsteps,q,testsize)*NaN;
+hist_Y_sse = zeros(maxsteps,q,testsize)*NaN;
 
 parfor f = 1:testsize%
     X = imds.readimage(f);
@@ -45,7 +45,7 @@ parfor f = 1:testsize%
         biasw = quant(l).Bias(i);
         scale = 2^floor(log2(std(convw(:))/1024));
         coded = Inf;
-        for j = 1:steps
+        for j = 1:maxsteps
             if coded == 0
                 break
             end
@@ -62,12 +62,12 @@ parfor f = 1:testsize%
             Y_sse = sum((Y_hat(:) - Y(:)).^2);
             coded = qentropy([convq(:);biasq]);
             
-            hist_coded(f,j,i) = coded;
-            hist_Y_sse(f,j,i) = Y_sse;
+            hist_coded(j,i,f) = coded;
+            hist_Y_sse(j,i,f) = Y_sse;
             
             [~,filename] = fileparts(imds.Files{f});
-            disp(sprintf('%s | slice %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
-                         filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
+            disp(sprintf('%s %s | slice %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
+                         archname, filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
         end
     end
 end    
