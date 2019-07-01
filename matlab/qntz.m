@@ -5,7 +5,7 @@ close all;
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
-archname = 'densenet201';
+archname = 'vgg16';
 filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
 testsize = 8;
 maxsteps = 64;
