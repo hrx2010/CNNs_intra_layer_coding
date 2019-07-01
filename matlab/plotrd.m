@@ -13,7 +13,7 @@ Yh = zeros(size(Y))*NaN;
 for i = 1:size(X,2)
     x = X(:,i);
     y = Y(:,i);
-    k = cleanhull(convhull(x(~isnan(x)),y(~isnan(y))));
+    k = cleanhull(x(~isnan(x)),y(~isnan(y)));
     Xh(1:length(k),i) = x(k);
     Yh(1:length(k),i) = y(k);
 end
