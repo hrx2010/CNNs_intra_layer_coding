@@ -31,7 +31,7 @@ ylabel('Mean squared error');
 pdfprint('temp0.pdf','Width',20,'Height',12,'Position',[3.5,3,15.5,8]);
 
 figure(2);
-i = [0,16,32,48,64]+1
+i = 1:64;%[0,16,32,48,64]+1
 plot(Xh(:,i),Yh(:,i),'.-','MarkerSize',8);
 xticks(0:2:6);
 yticks(0:0.1:0.3);
