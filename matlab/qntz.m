@@ -6,7 +6,7 @@ close all;
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
 archname = 'alexnet';
-filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
+filepath = '~/Developer/ILSVRC2012/*.JPEG';
 testsize = 128;
 maxsteps = 64;
 
@@ -28,9 +28,6 @@ for i = 1:q % iterate over output channels
     scale = 2^floor(log2(sqrt(mean(convw(:).^2))/1024));
     coded = Inf;
     for j = 1:maxsteps
-        if coded == 0
-            break
-        end
         delta = scale*sqrt(2^(j-1));
         % quantize each of the q slices
         convq = quantize(convw,delta);
@@ -55,7 +52,10 @@ for i = 1:q % iterate over output channels
             disp(sprintf('%s %s | slice %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
                          archname, filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
         end
+        if coded == 0
+            break
+        end
     end
 end
 
-save(archname,'hist_coded','hist_Y_sse','hist_delta');
+save([archname,'_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_delta');

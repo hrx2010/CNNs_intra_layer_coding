@@ -1,6 +1,6 @@
-function points = lambda2points(X,Y,lambda)
+function points = lambda2points(X,Y,Z,lambda)
 %LAMBDA2POINTS Find indices at the the specified trade-off lambda
-%   POINTS = LAMBDA2POINTS(X,Y,LAMBDA) finds the index of the 
+%   POINTS = LAMBDA2POINTS(X,Y,Z,LAMBDA) finds the index of the 
 %   rates X, distortions Y for the given distortion-rate tradeoff
 %   LAMBDA.
 %
@@ -27,13 +27,13 @@ function points = lambda2points(X,Y,lambda)
 % PERFORMANCE OF THIS SOFTWARE.
 
     lambda = max(0,lambda);
-    points = zeros(size(X,2),1);
+    points = zeros(size(Z,2),size(Z,3));
     % compute the convex hulls
     for i = 1:size(X,2)
         k = rdhull(X(:,i),Y(:,i));
         l = [-diff(Y(k,i))./diff(X(k,i));0];
         %find the first point with slope less than lambda
-        % z = Z(k,i);
-        points(i) = find(l<=lambda,1);
+        z = Z(k,i,:);
+        points(i,:) = z(find(l<=lambda,1),:);
     end
 end
