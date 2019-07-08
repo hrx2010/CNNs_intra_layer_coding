@@ -21,20 +21,17 @@ hist_freq_delta = zeros(maxsteps,q,testsize)*NaN;
 hist_freq_coded = zeros(maxsteps,q,testsize)*NaN;
 hist_freq_Y_sse = zeros(maxsteps,q,testsize)*NaN;
 
-Weights = layers(l).Weights;
-% Bias = layers(l).Bias;
+% layers(l).Weights = fft2split(fftshift(fftshift(fft2(layers(l).Weights),1),2));
 
 for i = 1:h*w % iterate over output channels
     [r,c] = ind2sub([h,w],i);
     quant = layers;
-    % convw = fftshift(fftshift(fft2(layers(l).Weights),1),2);
-    % biasw = layers(l).Bias;
-    scale = 2^floor(log2(sqrt(mean(reshape(Weights(r,c,:,:),[],1).^2))/1024));
+    scale = 2^floor(log2(sqrt(mean(reshape(layers(l).Weights(r,c,:,:),[],1).^2))/1024));
     coded = Inf;
     for j = 1:maxsteps
         delta = scale*sqrt(2^(j-1));
         % quantize each of the q slices
-        convq = Weights;
+        convq = layers(l).Weights;
         convq(r,c,:,:) = quantize(convq(r,c,:,:),delta);
         coded = qentropy(convq(r,c,:,:));
         % assemble the net using layers
@@ -52,7 +49,7 @@ for i = 1:h*w % iterate over output channels
             hist_freq_Y_sse(j,i,f) = Y_sse;
         
             [~,filename] = fileparts(imds.Files{f});
-            disp(sprintf('%s %s | slice %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
+            disp(sprintf('%s %s | band %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
                          archname, filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
         end
         if coded == 0

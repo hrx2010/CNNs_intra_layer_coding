@@ -21,34 +21,21 @@ hist_freq_delta = zeros(maxsteps,q,testsize)*NaN;
 hist_freq_coded = zeros(maxsteps,q,testsize)*NaN;
 hist_freq_Y_sse = zeros(maxsteps,q,testsize)*NaN;
 
-Weights = fftshift(fftshift(fft2(layers(l).Weights),1),2);
-% Bias = layers(l).Bias;
+layers(l).Weights = fft2split(fftshift(fftshift(fft2(layers(l).Weights),1),2));
 
-for i = 1:h*w % iterate over output channels
+for i = 1:h*w % iterate over the frequency bands
     [r,c] = ind2sub([h,w],i);
     quant = layers;
-    % convw = fftshift(fftshift(fft2(layers(l).Weights),1),2);
-    % biasw = layers(l).Bias;
-    if i < ceil(h*w/2)
-        scale = 2^floor(log2(sqrt(mean(reshape(real(Weights(r,c,:,:)),[],1).^2))/1024));
-    else
-        scale = 2^floor(log2(sqrt(mean(reshape(imag(Weights(r,c,:,:)),[],1).^2))/1024));
-    end        
+    scale = 2^floor(log2(sqrt(mean(reshape(abs(layers(l).Weights(r,c,:,:)),[],1).^2))/1024));
     coded = Inf;
     for j = 1:maxsteps
         delta = scale*sqrt(2^(j-1));
         % quantize each of the q slices
-        convq = Weights;
-        if i < ceil(h*w/2)
-            convq(r,c,:,:) = quantize(real(convq(r,c,:,:)),delta) + 1i*imag(convq(r,c,:,:));
-            coded = qentropy(real(convq(r,c,:,:)));
-        else
-            convq(r,c,:,:) = real(convq(r,c,:,:)) + 1i*quantize(imag(convq(r,c,:,:)),delta);
-            coded = qentropy(imag(convq(r,c,:,:)));
-        end
-        convq(end+1-r,end+1-c,:,:) = conj(convq(r,c,:,:));
+        convq = layers(l).Weights;
+        convq(r,c,:,:) = quantize(convq(r,c,:,:),delta);
+        coded = qentropy(convq(r,c,:,:));
         % assemble the net using layers
-        quant(l).Weights = ifft2(ifftshift(ifftshift(convq,1),2));
+        quant(l).Weights = ifft2(ifftshift(ifftshift(ifft2split(convq),1),2));
         net = assembleNetwork(quant);
         for f = 1:testsize%
             X = imds.readimage(f);
