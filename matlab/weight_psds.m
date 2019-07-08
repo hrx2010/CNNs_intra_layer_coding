@@ -1,39 +1,50 @@
 clear all;
 close all;
 
-%load weight_values;
-net = alexnet;
+archname = 'alexnet';
+filepath = '~/Developer/ILSVRC2012/*.JPEG';
+testsize = 128;
+maxsteps = 64;
 
-l = 1; %layer
+[net,imds] = loadnetwork(archname, filepath);
+l = findconv(net.Layers); %layer
 
-xcoeffs = fft2(squeeze(net.Layers(2).Weights));
-xcoeffs = fftshift(fftshift(xcoeffs,1),2);
-
-h = size(xcoeffs,1);
-w = size(xcoeffs,2);
-
-% for m = 1:h
-%     for n = 1:w
-%         % use imaginary or real parts of the coefficients
-%         if (h*(n-1)+m < (h*w+1)/2)
-%             xcoeffs(m,n,:,:) = imag(xcoeffs(m,n,:,:));
-%         else
-%             xcoeffs(m,n,:,:) = real(xcoeffs(m,n,:,:));
-%         end
-%     end
-% end
-
+[h,w,p,q] = size(net.Layers(l).Weights);
+xcoeffs = squeeze(net.Layers(l).Weights);
 psd = mean(mean(abs(xcoeffs).^2,3),4);
+disp(sum(psd(:)));
+
+figure(1);
 bar3c(psd,1);
+colormap(viridis(64));
+xticks(1:2:11);
+yticks(1:2:11);
 xlabel('$n$');
 ylabel('$m$');
-zlabel('$\omega^2(n,m)$');
-axis([0.5,h+0.5,0.5,h+0.5,0,max(psd(:))]);
-axis square;
+%zlabel('$\omega^2(n,m)$');
+axis([0.5,h+0.5,0.5,h+0.5,0,max(psd(:))],'square');
+xcoeffs = fftshift(fftshift(fft2(net.Layers(l).Weights),1),2);
+xcoeffs = reshape(xcoeffs,[h*w,p*q]);
+xcoeffs = reshape([sqrt(2)*imag(xcoeffs(1:(end+1)/2-1,:));
+                   real(xcoeffs((end+1)/2,:));
+                   sqrt(2)*real(xcoeffs((end+1)/2+1:end,:))],[h,w,p,q]);
+psd = mean(mean(abs(xcoeffs).^2,3),4)*(1/h/w);
+view(-45,45);
+disp(sum(psd(:)));
+camproj('perspective');
 
+pdfprint('temp1.pdf','Width',21,'Height',21,'Position',[2,2,18.5,18.5]);
 
+figure(2);
+bar3c(psd,1);
+colormap(viridis(64));
+xticks(1:2:11);
+yticks(1:2:11);
+xlabel('$n$');
+ylabel('$m$');
+axis([0.5,h+0.5,0.5,h+0.5,0,max(psd(:))],'square');
+view(-45,45);
+disp(sum(psd(:)));
+camproj('perspective');
 
-% F x G different curves, see if RD curves 
-% Input layer first.
-
-
+pdfprint('temp2.pdf','Width',21,'Height',21,'Position',[2,2,18.5,18.5]);
