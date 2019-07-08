@@ -21,7 +21,7 @@ hist_freq_delta = zeros(maxsteps,q,testsize)*NaN;
 hist_freq_coded = zeros(maxsteps,q,testsize)*NaN;
 hist_freq_Y_sse = zeros(maxsteps,q,testsize)*NaN;
 
-Weights = fftshift(fftshift(fft2(layers(l).Weights),1),2);
+Weights = layers(l).Weights;
 % Bias = layers(l).Bias;
 
 for i = 1:h*w % iterate over output channels
@@ -29,26 +29,16 @@ for i = 1:h*w % iterate over output channels
     quant = layers;
     % convw = fftshift(fftshift(fft2(layers(l).Weights),1),2);
     % biasw = layers(l).Bias;
-    if i < ceil(h*w/2)
-        scale = 2^floor(log2(sqrt(mean(reshape(real(Weights(r,c,:,:)),[],1).^2))/1024));
-    else
-        scale = 2^floor(log2(sqrt(mean(reshape(imag(Weights(r,c,:,:)),[],1).^2))/1024));
-    end        
+    scale = 2^floor(log2(sqrt(mean(reshape(Weights(r,c,:,:),[],1).^2))/1024));
     coded = Inf;
     for j = 1:maxsteps
         delta = scale*sqrt(2^(j-1));
         % quantize each of the q slices
         convq = Weights;
-        if i < ceil(h*w/2)
-            convq(r,c,:,:) = quantize(real(convq(r,c,:,:)),delta) + 1i*imag(convq(r,c,:,:));
-            coded = qentropy(real(convq(r,c,:,:)));
-        else
-            convq(r,c,:,:) = real(convq(r,c,:,:)) + 1i*quantize(imag(convq(r,c,:,:)),delta);
-            coded = qentropy(imag(convq(r,c,:,:)));
-        end
-        convq(end+1-r,end+1-c,:,:) = conj(convq(r,c,:,:));
+        convq(r,c,:,:) = quantize(convq(r,c,:,:),delta);
+        coded = qentropy(convq(r,c,:,:));
         % assemble the net using layers
-        quant(l).Weights = ifft2(ifftshift(ifftshift(convq,1),2));
+        quant(l).Weights = convq;
         net = assembleNetwork(quant);
         for f = 1:testsize%
             X = imds.readimage(f);
@@ -62,7 +52,7 @@ for i = 1:h*w % iterate over output channels
             hist_freq_Y_sse(j,i,f) = Y_sse;
         
             [~,filename] = fileparts(imds.Files{f});
-            disp(sprintf('%s %s | band %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
+            disp(sprintf('%s %s | slice %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
                          archname, filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
         end
         if coded == 0
@@ -71,4 +61,4 @@ for i = 1:h*w % iterate over output channels
     end
 end
 
-save([archname,'_freq_',num2str(testsize)],'hist_freq_coded','hist_freq_Y_sse','hist_freq_delta');
+save([archname,'_freq_base_',num2str(testsize)],'hist_freq_coded','hist_freq_Y_sse','hist_freq_delta');
