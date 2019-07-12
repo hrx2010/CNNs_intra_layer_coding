@@ -1,37 +1,42 @@
 clear all;
 close all;
 
-load weight_values;
+% Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
+% 'resnet50', and specify the filepath for ILSVRC test images. Number
+% of test files to predict can be set manually or set to 0 to predict
+% all files in the datastore (not recommended)
+archname = 'alexnet';
+filepath = '~/Developer/ILSVRC2012/*.JPEG';
+testsize = 1;
+maxsteps = 1;
 
+[neural,imds] = loadnetwork(archname, filepath);
+layers = removeLastLayer(neural);
+neural = assembleNetwork(layers);
 
-l = 12; %layer
-m = 2;  %row
-n = 2;  %col
+l = findconv(layers); % or specify the layer number directly
+[h,w,p,q] = size(layers(l).Weights);
+m = 1;  %row
+n = 1;  %col
 
 % IM IM RE
 % IM DC RE
 % IM RE RE
 
-xcoeffs = fft2(squeeze(weight_values{l}(:,:,:,:)));
-xcoeffs = fftshift(fftshift(xcoeffs,1),2);
-weights = weight_values{l};
+xcoeffs = fft2split(fftshift(fftshift(fft2(neural.Layers(l).Weights),1),2));
+weights = neural.Layers(l).Weights;
 
 h = size(xcoeffs,1);
 w = size(xcoeffs,2);
 
-% use imaginary or real parts of the coefficients
-if (h*(n-1)+m < (h*w+1)/2)
-    x = reshape(imag(xcoeffs(m,n,:,:)),[],1);
-else
-    x = reshape(real(xcoeffs(m,n,:,:)),[],1);
-end
+x = xcoeffs(:);
+%x = neural.Layers(l).Weights(:);
 
-%x = reshape(real(weights(m,n,:,:)),[],1);
-bin_width = 3.5*std(x(:))*numel(x)^(-1/3);
-
-bin_count = 256;
-bin_edges = (-bin_count/2+0.5:bin_count/2-0.5)*bin_width;
-bin_point = (-bin_count/2+1.0:bin_count/2-1.0)*bin_width;
+bin_width = 2^-4;
+bin_count = 1024;
+bin_bound = 
+bin_edges = (-bin_bound+0.5:bin_bound-0.5)*bin_width;
+bin_point = (-bin_bound+1.0:bin_bound-1.0)*bin_width;
 
 x(x<bin_edges(1)) = bin_edges(1);
 x(x>bin_edges(end)) = bin_edges(end);

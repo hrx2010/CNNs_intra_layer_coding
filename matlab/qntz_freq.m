@@ -7,7 +7,7 @@ close all;
 % all files in the datastore (not recommended)
 archname = 'alexnet';
 filepath = '~/Developer/ILSVRC2012/*.JPEG';
-testsize = 8;
+testsize = 1;
 maxsteps = 64;
 
 [neural,imds] = loadnetwork(archname, filepath);
@@ -17,11 +17,11 @@ neural = assembleNetwork(layers);
 l = findconv(layers); % or specify the layer number directly
 [h,w,p,q] = size(layers(l).Weights);
 
-hist_freq_delta = zeros(maxsteps,q,testsize)*NaN;
-hist_freq_coded = zeros(maxsteps,q,testsize)*NaN;
-hist_freq_Y_sse = zeros(maxsteps,q,testsize)*NaN;
+hist_freq_delta = zeros(maxsteps,h*w,testsize)*NaN;
+hist_freq_coded = zeros(maxsteps,h*w,testsize)*NaN;
+hist_freq_Y_sse = zeros(maxsteps,h*w,testsize)*NaN;
 
-layers(l).Weights = fft2split(fftshift(fftshift(fft2(layers(l).Weights),1),2));
+layers(l).Weights = fft2split(fftshift(fftshift(fft2(neural.Layers(l).Weights),1),2));
 
 for i = 1:h*w % iterate over the frequency bands
     [r,c] = ind2sub([h,w],i);
@@ -49,8 +49,8 @@ for i = 1:h*w % iterate over the frequency bands
             hist_freq_Y_sse(j,i,f) = Y_sse;
         
             [~,filename] = fileparts(imds.Files{f});
-            disp(sprintf('%s %s | band %03d, delta: %5.2e, relerr: %5.2e, rate: %5.2e',...
-                         archname, filename, i, delta, sqrt(Y_sse/Y_ssq), coded));
+            disp(sprintf('%s %s | band %03d, scale: %3d, delta: %+5.1f, relerr: %5.2e, rate: %5.2e',...
+                         archname, filename, i, log2(scale), log2(delta), sqrt(Y_sse/Y_ssq), coded));
         end
         if coded == 0
             break
