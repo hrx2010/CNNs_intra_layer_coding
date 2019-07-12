@@ -24,9 +24,12 @@ for i = 1:size(X,2)
 end
 Lh = -diff(Yh,1)./diff(Xh,1);
 
+Lind = round((1:size(Lh,1)*2)/2);
+Xind = floor((1:size(Lh,1)*2)/2) + 1;
+
 figure(1);
 i = 1:16:96;
-semilogy(Xh(1:end-1,i),Lh(:,i),'.-','MarkerSize',8);
+semilogy(Xh(Xind,i),Lh(Lind,i),'.-','MarkerSize',8);
 hold on;
 semilogy([0,8],[10^-4,10^-4],'-','Color',0.2*[1,1,1]);
 xticks(0:2:8);
@@ -38,7 +41,7 @@ pdfprint('temp1.pdf','Width',21,'Height',12,'Position',[3.5,3,16.5,8]);
 
 figure(2);
 i = 1:16:96;
-loglog(Dh(1:end-1,i),Lh(:,i),'.-','MarkerSize',8);
+loglog(Dh(Xind,i),Lh(Lind,i),'.-','MarkerSize',8);
 yticks(10.^(-8:2:0));
 xlabel('Optimal step-size');
 ylabel('R-D trade-off ($\lambda$)');

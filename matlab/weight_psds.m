@@ -8,43 +8,41 @@ maxsteps = 64;
 
 [net,imds] = loadnetwork(archname, filepath);
 l = findconv(net.Layers); %layer
-
 [h,w,p,q] = size(net.Layers(l).Weights);
-xcoeffs = squeeze(net.Layers(l).Weights);
-psd = mean(mean(abs(xcoeffs).^2,3),4);
-disp(sum(psd(:)));
 
+kltfun = @(x) klt2(x);
+fftfun = @(x) fft2split(fftshift(fftshift(fft2(x),1),2))*sqrt(1/h/w);
+dctfun = @(x) fct2(x);
+id_fun = @(x) x;
+
+funarray = {id_fun,kltfun,fftfun,dctfun};
+for f = 1:length(funarray);
+    close all; 
+    figure(f);
+    xcoeffs = funarray{f}(net.Layers(l).Weights);
+    psd = mean(mean(abs(xcoeffs).^2,3),4);
+    bar3c(psd,1);
+    colormap(viridis(64));
+    xticks(1:2:11);
+    yticks(1:2:11);
+    xlabel('$n$');
+    ylabel('$m$');
+    axis([0.5,h+0.5,0.5,h+0.5,0,max(psd(:))],'square');
+    view(-45,45);
+    disp(sum(psd(:)));
+    camproj('perspective');
+    pdfprint(sprintf('temp_%d.pdf',f),'Width',21,'Height',21,'Position',[2,2,18.5,18.5]);
+    input('press any key to continue...');
+end
+
+close all;
 figure(1);
-bar3c(psd,1);
-colormap(viridis(64));
-xticks(1:2:11);
-yticks(1:2:11);
-xlabel('$n$');
-ylabel('$m$');
-%zlabel('$\omega^2(n,m)$');
-axis([0.5,h+0.5,0.5,h+0.5,0,max(psd(:))],'square');
-xcoeffs = fftshift(fftshift(fft2(net.Layers(l).Weights),1),2);
-xcoeffs = reshape(xcoeffs,[h*w,p*q]);
-xcoeffs = reshape([sqrt(2)*imag(xcoeffs(1:(end+1)/2-1,:));
-                   real(xcoeffs((end+1)/2,:));
-                   sqrt(2)*real(xcoeffs((end+1)/2+1:end,:))],[h,w,p,q]);
-psd = mean(mean(abs(xcoeffs).^2,3),4)*(1/h/w);
-view(-45,45);
-disp(sum(psd(:)));
-camproj('perspective');
-
-pdfprint('temp1.pdf','Width',21,'Height',21,'Position',[2,2,18.5,18.5]);
-
-figure(2);
-bar3c(psd,1);
-colormap(viridis(64));
-xticks(1:2:11);
-yticks(1:2:11);
-xlabel('$n$');
-ylabel('$m$');
-axis([0.5,h+0.5,0.5,h+0.5,0,max(psd(:))],'square');
-view(-45,45);
-disp(sum(psd(:)));
-camproj('perspective');
-
-pdfprint('temp2.pdf','Width',21,'Height',21,'Position',[2,2,18.5,18.5]);
+for f = 1:length(funarray);
+    xcoeffs = funarray{f}(net.Layers(l).Weights);
+    psd = mean(mean(abs(xcoeffs).^2,3),4);
+    semilogy(0:h*w-1,sort(psd(:),'descend'));
+    hold on;
+end
+xlabel('Coefficients');
+ylabel('Squared magnitude');
+pdfprint('temp1.pdf','Width',21,'Height',12,'Position',[3.5,3,16.5,8]);

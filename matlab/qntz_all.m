@@ -64,4 +64,4 @@ for j = 1:numslope
     end
 end
 
-save([archname,'_sum_',num2str(testsize)],'hist_sum_coded','hist_sum_Y_sse','hist_sum_coded','pred_sum_Y_sse');
+save([archname,'_sum_',num2str(testsize)],'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse');
