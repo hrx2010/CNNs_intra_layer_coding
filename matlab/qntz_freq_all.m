@@ -42,7 +42,7 @@ for j = 1:numslope
     end
     quant(l).Weights = ifft2(ifftshift(ifftshift(ifft2split(quant(l).Weights),1),2));
     net = assembleNetwork(quant);
-    for f = 1:testsize%
+    parfor f = 1:testsize%
         X = imds.readimage(f);
         Y = predict(neural,X);
         Y_ssq = sum(Y(:).^2);
@@ -60,4 +60,4 @@ for j = 1:numslope
     end
 end
 
-save([archname,'_freq_sum_',num2str(testsize)],'hist_freq_sum_coded','hist_freq_sum_Y_sse','pred_ferq_sum_Y_sse');
+save([archname,'_freq_sum_',num2str(testsize)],'hist_freq_sum_coded','hist_freq_sum_Y_sse','pred_freq_sum_Y_sse');
