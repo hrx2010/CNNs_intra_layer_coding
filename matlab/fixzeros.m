@@ -8,10 +8,10 @@ load([archname,'_freq_',num2str(testsize)],'hist_freq_coded','hist_freq_Y_sse','
 
 for j = 1:121
     for k = 1:128
-        idx = find(hist_freq_Y_sse(:,j,k)==0);
+        idx = find(isnan(hist_freq_Y_sse(:,j,k)));
         hist_freq_Y_sse(idx,j,k) = NaN;
         hist_freq_coded(idx,j,k) = NaN;
-        hist_ferq_delta(idx,j,k) = NaN;
+        hist_freq_delta(idx,j,k) = NaN;
     end
 end
 
