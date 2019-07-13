@@ -6,8 +6,8 @@ close all;
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
 archname = 'alexnet';
-filepath = '~/Developer/ILSVRC2012/ILSVRC2012_test_00000*.JPEG';
-testsize = 128;
+filepath = '~/Developer/ILSVRC2012/*.JPEG';
+testsize = 1;
 numslope = 64;
 
 [neural,imds] = loadnetwork(archname, filepath);
@@ -27,20 +27,21 @@ hist_freq_sum_Y_sse = zeros(numslope,1,testsize)*NaN;
 pred_freq_sum_Y_sse = zeros(numslope,1,testsize)*NaN;
 hist_freq_sum_coded = zeros(numslope,1,testsize)*NaN;
 
-layers(l).Weights = fft2split(fftshift(fftshift(fft2(neural.Layers(l).Weights),1),2));
+layers(l).Weights = dft2(layers(l).Weights);
 
 for j = 1:numslope
     slope = sqrt(2^j)/2^28;
-    quant = layers;
     dists = lambda2points(mean_freq_coded,mean_freq_Y_sse,hist_freq_Y_sse,slope);
     coded = lambda2points(mean_freq_coded,mean_freq_Y_sse,hist_freq_coded,slope);
     steps = lambda2points(mean_freq_coded,mean_freq_Y_sse,hist_freq_delta,slope);
+    quant = layers;
     for i = 1:h*w % iterate over output channels
         [r,c] = ind2sub([h,w],i);
         % quantize for the given lambda
-        quant(l).Weights(r,c,:,:) = quantize(layers(l).Weights(r,c,:,:),steps(i,1));
+        delta = steps(i,1);
+        quant(l).Weights(r,c,:,:) = quantize(quant(l).Weights(r,c,:,:),delta);
     end
-    quant(l).Weights = ifft2(ifftshift(ifftshift(ifft2split(quant(l).Weights),1),2));
+    quant(l).Weights = idft2(quant(l).Weights);
     net = assembleNetwork(quant);
     parfor f = 1:testsize%
         X = imds.readimage(f);

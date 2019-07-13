@@ -7,7 +7,7 @@ close all;
 % all files in the datastore (not recommended)
 archname = 'alexnet';
 filepath = '~/Developer/ILSVRC2012/*.JPEG';
-testsize = 1;
+testsize = 1024;
 maxsteps = 64;
 
 [neural,imds] = loadnetwork(archname, filepath);
@@ -21,21 +21,20 @@ hist_freq_delta = zeros(maxsteps,h*w,testsize)*NaN;
 hist_freq_coded = zeros(maxsteps,h*w,testsize)*NaN;
 hist_freq_Y_sse = zeros(maxsteps,h*w,testsize)*NaN;
 
-layers(l).Weights = fft2split(fftshift(fftshift(fft2(neural.Layers(l).Weights),1),2));
+layers(l).Weights = dft2(layers(l).Weights);
 
 for i = 1:h*w % iterate over the frequency bands
     [r,c] = ind2sub([h,w],i);
-    quant = layers;
-    scale = 2^floor(log2(sqrt(mean(reshape(abs(layers(l).Weights(r,c,:,:)),[],1).^2))/1024));
+    scale = 2^floor(log2(sqrt(mean(reshape(layers(l).Weights(r,c,:,:),[],1).^2))/1024));
     coded = Inf;
     for j = 1:maxsteps
         delta = scale*sqrt(2^(j-1));
         % quantize each of the q slices
-        convq = layers(l).Weights;
-        convq(r,c,:,:) = quantize(convq(r,c,:,:),delta);
-        coded = qentropy(convq(r,c,:,:));
+        quant = layers;
+        quant(l).Weights(r,c,:,:) = quantize(quant(l).Weights(r,c,:,:),delta);
+        coded = qentropy(quant(l).Weights(r,c,:,:));
         % assemble the net using layers
-        quant(l).Weights = ifft2(ifftshift(ifftshift(ifft2split(convq),1),2));
+        quant(l).Weights = idft2(quant(l).Weights);
         net = assembleNetwork(quant);
         for f = 1:testsize%
             X = imds.readimage(f);

@@ -11,7 +11,7 @@ l = findconv(net.Layers); %layer
 [h,w,p,q] = size(net.Layers(l).Weights);
 
 kltfun = @(x) klt2(x);
-fftfun = @(x) fft2split(fftshift(fftshift(fft2(x),1),2))*sqrt(1/h/w);
+fftfun = @(x) dft2(x);
 dctfun = @(x) fct2(x);
 id_fun = @(x) x;
 
