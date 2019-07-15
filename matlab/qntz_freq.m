@@ -23,6 +23,14 @@ hist_freq_Y_sse = zeros(maxsteps,h*w,testsize)*NaN;
 
 layers(l).Weights = dft2(layers(l).Weights);
 
+outputsize = layers(end-1).OutputSize;
+Y = zeros(outputsize,testsize);
+Y_ssq = zeros(1,testsize);
+parfor f = 1:testsize
+    X = imds.readimage(f);
+    Y(:,f) = predict(neural,X);
+end
+
 for i = 1:h*w % iterate over the frequency bands
     [r,c] = ind2sub([h,w],i);
     scale = 2^floor(log2(sqrt(mean(reshape(layers(l).Weights(r,c,:,:),[],1).^2))/1024));
@@ -35,22 +43,18 @@ for i = 1:h*w % iterate over the frequency bands
         coded = qentropy(quant(l).Weights(r,c,:,:));
         % assemble the net using layers
         quant(l).Weights = idft2(quant(l).Weights);
-        net = assembleNetwork(quant);
-        for f = 1:testsize%
+        neural = assembleNetwork(quant);
+        parfor f = 1:testsize%
             X = imds.readimage(f);
-            Y = predict(neural,X);
-            Y_ssq = sum(Y(:).^2);
             % run the prediction on image X
-            Y_hat = predict(net,X);
-            Y_sse = sum((Y_hat(:) - Y(:)).^2);
+            Y_hat = predict(neural,X);
+            Y_sse = mean((Y_hat(:) - Y(:,f)).^2);
             hist_freq_delta(j,i,f) = delta;
             hist_freq_coded(j,i,f) = coded;
             hist_freq_Y_sse(j,i,f) = Y_sse;
-        
-            [~,filename] = fileparts(imds.Files{f});
-            disp(sprintf('%s %s | band %03d, scale: %3d, delta: %+5.1f, relerr: %5.2e, rate: %5.2e',...
-                         archname, filename, i, log2(scale), log2(delta), sqrt(Y_sse/Y_ssq), coded));
         end
+        disp(sprintf('%s | layer %03d, band %03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e',...
+             archname, l, i, log2(scale), log2(delta), mean(hist_freq_Y_sse(j,i,:)), coded));
         if coded == 0
             break
         end
