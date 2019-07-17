@@ -25,7 +25,6 @@ layers(l).Weights = dft2(layers(l).Weights);
 
 outputsize = layers(end-1).OutputSize;
 Y = zeros(outputsize,testsize);
-Y_ssq = zeros(1,testsize);
 parfor f = 1:testsize
     X = imds.readimage(f);
     Y(:,f) = predict(neural,X);
