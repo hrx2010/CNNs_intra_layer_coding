@@ -54,8 +54,8 @@ for j = 1:maxsteps
         hist_freq_base_sum_coded(j,1,f) = coded;
         hist_freq_base_sum_Y_sse(j,1,f) = Y_sse;
     end
-    disp(sprintf('%s | layer %03d, band %03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e',...
-                 archname, l, i, log2(scale), log2(delta), mean(hist_freq_base_Y_sse(j,1,:)), coded));
+    disp(sprintf('%s | layer %03d, band sum, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e',...
+         archname, l, log2(scale), log2(delta), mean(hist_freq_base_sum_Y_sse(j,1,:)), coded));
     if coded == 0
         break
     end
