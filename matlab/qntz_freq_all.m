@@ -37,7 +37,7 @@ parfor f = 1:testsize
 end
 
 for j = 1:numslope
-    slope = sqrt(2^j)/2^28;
+    slope = sqrt(2^j)/2^32;
     dists = lambda2points(mean_freq_coded,mean_freq_Y_sse,hist_freq_Y_sse,slope);
     coded = lambda2points(mean_freq_coded,mean_freq_Y_sse,hist_freq_coded,slope);
     steps = lambda2points(mean_freq_coded,mean_freq_Y_sse,hist_freq_delta,slope);
