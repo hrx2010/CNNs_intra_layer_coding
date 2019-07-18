@@ -62,8 +62,8 @@ for l = 1:l_length
                 hist_coded(j,i,f) = coded;
                 hist_Y_sse(j,i,f) = Y_sse;
             end
-            disp(sprintf('%s | layer %03d, band %03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e',...
-                         archname, l, i, log2(scale), log2(delta), mean(hist_Y_sse(j,i,:)), coded));
+            disp(sprintf('%s %s | layer %03d, band %03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e',...
+                         archname, tranname, l, i, log2(scale), log2(delta), mean(hist_Y_sse(j,i,:)), coded));
             if coded == 0
                 break
             end
