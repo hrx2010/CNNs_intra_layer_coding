@@ -30,7 +30,7 @@ parfor f = 1:testsize
     Y(:,f) = predict(neural,X);
 end
 
-for l = 1:l_length
+for l = 2:l_length
     layers = neural.Layers;
     l_ind = l_inds(l);
     layers(l_ind).Weights = trans{1}(layers(l_ind).Weights);
@@ -52,18 +52,18 @@ for l = 1:l_length
             coded = qentropy(quant(l_ind).Weights(r,c,:,:));
             % assemble the net using layers
             quant(l_ind).Weights = trans{2}(quant(l_ind).Weights);
-            neural = assembleNetwork(quant);
+            ournet = assembleNetwork(quant);
             parfor f = 1:testsize%
                 X = imds.readimage(f);
                 % run the prediction on image X
-                Y_hat = predict(neural,X);
+                Y_hat = predict(ournet,X);
                 Y_sse = mean((Y_hat(:) - Y(:,f)).^2);
                 hist_delta(j,i,f) = delta;
                 hist_coded(j,i,f) = coded;
                 hist_Y_sse(j,i,f) = Y_sse;
             end
-            disp(sprintf('%s %s | layer %03d, band %03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e',...
-                         archname, tranname, l, i, log2(scale), log2(delta), mean(hist_Y_sse(j,i,:)), coded));
+            disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e', ...
+                         archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(hist_Y_sse(j,i,:)), coded));
             if coded == 0
                 break
             end
