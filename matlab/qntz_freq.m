@@ -7,14 +7,15 @@ close all;
 % all files in the datastore (not recommended)
 archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
-labeldir = '~/Developer/ILSVRC2012_val/ILSVRC2012_validation_ground_truth.txt'
-tranname = 'dft2';
+labeldir = '~/Developer/ILSVRC2012_val/ILSVRC2012_validation_ground_truth.txt';
+tranname = 'dct2';
 testsize = 1024;
 maxsteps = 64;
 
 [neural,imds] = loadnetwork(archname, imagedir, labeldir);
-[layers,pred] = removeLastLayer(neural);
+[layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
+nclass = assembleNetwork(lclass);
 trans = {str2func(tranname), str2func(['i',tranname])};
 
 l_inds = findconv(layers); % or specify the layer number directly
@@ -31,7 +32,7 @@ parfor f = 1:testsize
     Y(:,f) = predict(neural,X);
 end
 
-for l = 2:l_length
+for l = 1:1%l_length
     layers = neural.Layers;
     l_ind = l_inds(l);
     layers(l_ind).Weights = trans{1}(layers(l_ind).Weights);
@@ -75,4 +76,4 @@ for l = 2:l_length
     hist_freq_coded{l} = hist_coded;
     hist_freq_Y_sse{l} = hist_Y_sse;
 end
-save([archname,'_',tranname,'_',num2str(testsize)],'hist_freq_coded','hist_freq_Y_sse','hist_freq_delta');
+save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_freq_coded','hist_freq_Y_sse','hist_freq_delta');
