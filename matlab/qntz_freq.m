@@ -6,13 +6,14 @@ close all;
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
 archname = 'alexnet';
-filepath = '~/Developer/ILSVRC2012/*.JPEG';
+imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
+labeldir = '~/Developer/ILSVRC2012_val/ILSVRC2012_validation_ground_truth.txt'
 tranname = 'dft2';
 testsize = 1024;
 maxsteps = 64;
 
-[neural,imds] = loadnetwork(archname, filepath);
-layers = removeLastLayer(neural);
+[neural,imds] = loadnetwork(archname, imagedir, labeldir);
+[layers,pred] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
 trans = {str2func(tranname), str2func(['i',tranname])};
 

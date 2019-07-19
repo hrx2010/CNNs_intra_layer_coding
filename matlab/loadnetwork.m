@@ -1,4 +1,4 @@
-function [neural,imds] = loadnetwork(archname, filepath)
+function [neural,imds] = loadnetwork(archname, imagedir, labeldir)
     switch archname
       case 'alexnet'
         readerfun = @read227x227;
@@ -17,5 +17,6 @@ function [neural,imds] = loadnetwork(archname, filepath)
         neural = mobilenetv2;
     end
 
-    imds = imageDatastore(filepath,'ReadFcn',readerfun);
+    labels = textread(labeldir);
+    imds = imageDatastore(imagedir,'ReadFcn',readerfun,'Labels',labels);
 end
