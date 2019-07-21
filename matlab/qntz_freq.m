@@ -82,7 +82,8 @@ for l = 1:l_length
     end
     hist_delta{l} = deltas;
     hist_coded{l} = codeds;
+    hist_Y_top{l} = Y_tops;
     hist_Y_sse{l} = Y_sses;
     hist_W_sse{l} = W_sses;
 end
-save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_delta','hist_W_sse');
+save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
