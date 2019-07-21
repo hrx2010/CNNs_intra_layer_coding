@@ -8,7 +8,7 @@ close all;
 archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'idt2';
+tranname = 'dft2';
 testsize = 1024;
 maxsteps = 64;
 
@@ -23,6 +23,7 @@ l_length = length(l_inds);
 
 hist_delta = cell(l_length,1);
 hist_coded = cell(l_length,1);
+hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
@@ -41,6 +42,7 @@ for l = 1:l_length
 
     deltas = zeros(maxsteps,h*w,1)*NaN;
     codeds = zeros(maxsteps,h*w,1)*NaN;
+    W_sses = zeros(maxsteps,h*w,1)*NaN;
     Y_sses = zeros(maxsteps,h*w,testsize)*NaN;
     Y_tops = zeros(maxsteps,h*w,testsize)*NaN;
     
@@ -56,6 +58,7 @@ for l = 1:l_length
             coded = qentropy(quant(l_ind).Weights(r,c,:,:))*(p*q);
             % assemble the net using layers
             quant(l_ind).Weights = trans{2}(quant(l_ind).Weights);
+            W_sse = sum(reshape(quant(l_ind).Weights(r,c,:,:) - neural.Layers(l_ind).Weights(r,c,:,:),[],1).^2);
             ournet = assembleNetwork(quant);
             parfor f = 1:testsize
                 X = imds.readimage(f);
@@ -67,9 +70,10 @@ for l = 1:l_length
             end
             deltas(j,i,1) = delta;
             codeds(j,i,1) = coded;
+            W_sses(j,i,1) = W_sse;
 
-            disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                 archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(Y_sses(j,i,:)), ...
+            disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
+                 archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(Y_sses(j,i,:)), W_sse, ...
                  mean(Y_tops(j,i,:))*100, coded/(p*q)));
             if coded == 0
                 break
@@ -79,5 +83,6 @@ for l = 1:l_length
     hist_delta{l} = deltas;
     hist_coded{l} = codeds;
     hist_Y_sse{l} = Y_sses;
+    hist_W_sse{l} = W_sses;
 end
-save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_delta');
+save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_delta','hist_W_sse');
