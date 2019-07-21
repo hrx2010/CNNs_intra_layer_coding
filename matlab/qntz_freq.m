@@ -7,7 +7,7 @@ close all;
 % all files in the datastore (not recommended)
 archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
-labeldir = '~/Developer/ILSVRC2012_val/labels.txt';
+labeldir = './ILSVRC2012_val.txt';
 tranname = 'idt2';
 testsize = 1024;
 maxsteps = 64;
