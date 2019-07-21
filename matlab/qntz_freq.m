@@ -24,6 +24,7 @@ l_length = length(l_inds);
 hist_delta = cell(l_length,1);
 hist_coded = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
+hist_Y_top = cell(l_length,1);
 
 outputsize = layers(end-1).OutputSize;
 Y = zeros(outputsize,testsize);
@@ -32,7 +33,7 @@ parfor f = 1:testsize
     Y(:,f) = predict(neural,X);
 end
 
-for l = 1:1%l_length
+for l = 1:l_length
     layers = neural.Layers;
     l_ind = l_inds(l);
     layers(l_ind).Weights = trans{1}(layers(l_ind).Weights);
@@ -41,6 +42,7 @@ for l = 1:1%l_length
     deltas = zeros(maxsteps,h*w,1)*NaN;
     codeds = zeros(maxsteps,h*w,1)*NaN;
     Y_sses = zeros(maxsteps,h*w,testsize)*NaN;
+    Y_tops = zeros(maxsteps,h*w,testsize)*NaN;
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
@@ -59,13 +61,16 @@ for l = 1:1%l_length
                 X = imds.readimage(f);
                 % run the prediction on image X
                 Y_hat = predict(ournet,X);
+                Y_cls = classify(nclass,Y_hat(:));
+                Y_tops(j,i,f) = Y_cls == imds.Labels(f);
                 Y_sses(j,i,f) = mean((Y_hat(:) - Y(:,f)).^2);
             end
             deltas(j,i,1) = delta;
             codeds(j,i,1) = coded;
 
-            disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, mse: %5.2e, rate: %5.2e', ...
-                         archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(Y_sses(j,i,:)), coded/(p*q)));
+            disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, top1: %5.2e, rate: %5.2e', ...
+                 archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(Y_sses(j,i,:)), mean(Y_tops(j,i,:)),...
+                 coded/(p*q)));
             if coded == 0
                 break
             end
