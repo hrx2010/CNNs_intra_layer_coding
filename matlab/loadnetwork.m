@@ -17,6 +17,6 @@ function [neural,imds] = loadnetwork(archname, imagedir, labeldir)
         neural = mobilenetv2;
     end
 
-    labels = textread(GetFullPath(labeldir));
+    labels = neural.Layers(end).Classes(textread(GetFullPath(labeldir)));
     imds = imageDatastore(imagedir,'ReadFcn',readerfun,'Labels',labels);
 end
