@@ -5,7 +5,7 @@ close all;
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
-archname = 'alexnet';
+archname = 'densenet201';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
 tranname = 'dft2';
@@ -35,10 +35,12 @@ parfor f = 1:testsize
 end
 
 for l = 1:l_length
-    layers = neural.Layers;
     l_ind = l_inds(l);
-    layers(l_ind).Weights = trans{1}(layers(l_ind).Weights);
-    [h,w,p,q] = size(layers(l_ind).Weights);
+    layer = neural.Layers(l_ind);
+    layer.Weights = trans{1}(layer.Weights);
+    % layers = neural.Layers;
+    % layers(l_ind).Weights = trans{1}(layers(l_ind).Weights);
+    [h,w,p,q] = size(layer.Weights);
 
     deltas = zeros(maxsteps,h*w,1)*NaN;
     codeds = zeros(maxsteps,h*w,1)*NaN;
@@ -48,18 +50,19 @@ for l = 1:l_length
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = 2^floor(log2(sqrt(mean(reshape(layers(l_ind).Weights(r,c,:,:),[],1).^2))/1024));
+        scale = 2^floor(log2(sqrt(mean(reshape(layer.Weights(r,c,:,:),[],1).^2))/1024));
         coded = Inf;
         for j = 1:maxsteps
             % quantize each of the q slices
-            quant = layers;
+            quant = layer;
             delta = scale*sqrt(2^(j-1));
-            quant(l_ind).Weights(r,c,:,:) = quantize(quant(l_ind).Weights(r,c,:,:),delta);
-            coded = qentropy(quant(l_ind).Weights(r,c,:,:))*(p*q);
+            quant.Weights(r,c,:,:) = quantize(quant.Weights(r,c,:,:),delta);
+            coded = qentropy(quant.Weights(r,c,:,:))*(p*q);
             % assemble the net using layers
-            quant(l_ind).Weights = trans{2}(quant(l_ind).Weights);
-            W_sse = sum(reshape(quant(l_ind).Weights(r,c,:,:) - neural.Layers(l_ind).Weights(r,c,:,:),[],1).^2);
-            ournet = assembleNetwork(quant);
+            quant.Weights = trans{2}(quant.Weights);
+            W_sse = sum(reshape(quant.Weights(r,c,:,:) - neural.Layers(l_ind).Weights(r,c,:,:),[],1).^2);
+            ournet = modifyLayers(neural,quant);
+
             parfor f = 1:testsize
                 X = imds.readimage(f);
                 % run the prediction on image X
