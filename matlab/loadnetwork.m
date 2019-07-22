@@ -1,4 +1,4 @@
-function [neural,imds] = loadnetwork(archname, imagedir, labeldir)
+function [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize)
     switch archname
       case 'alexnet'
         readerfun = @read227x227;
@@ -16,7 +16,10 @@ function [neural,imds] = loadnetwork(archname, imagedir, labeldir)
         readerfun = @read224x224;
         neural = mobilenetv2;
     end
-
     labels = neural.Layers(end).Classes(textread(GetFullPath(labeldir)));
-    imds = imageDatastore(imagedir,'ReadFcn',readerfun,'Labels',labels);
+    images = imageDatastore(imagedir,'ReadFcn',readerfun,'Labels',labels);
+    files = images.Files(1:testsize);
+    labels = images.Labels(1:testsize);
+    images.Files = files;
+    images.Labels = labels;
 end
