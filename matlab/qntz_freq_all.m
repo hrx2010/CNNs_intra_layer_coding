@@ -65,7 +65,7 @@ for j = 1:maxsteps
         quant(l_ind).Weights = trans{2}(quant(l_ind).Weights);
         distw{l} = double(sum(reshape(quant(l_ind).Weights - neural.Layers(l_ind).Weights,h*w,[]).^2,2));
     end
-    ournet = assembleNetwork(quant);
+    ournet = replaceLayers(neural,quant);
 
     dists = cell2mat(dists);
     coded = cell2mat(coded);
