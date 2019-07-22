@@ -18,7 +18,7 @@ neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
 trans = {str2func(tranname), str2func(['i',tranname])};
 
-l_inds = findconv(layers); % or specify the layer number directly
+l_inds = findconv(neural.Layers); % or specify the layer number directly
 l_length = length(l_inds);
 
 hist_delta = cell(l_length,1);
@@ -27,7 +27,7 @@ hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
-outputsize = layers(end-1).OutputSize;
+outputsize = neural.Layers(end-1).OutputSize;
 Y = zeros(outputsize,testsize);
 parfor f = 1:testsize
     X = imds.readimage(f);
@@ -61,7 +61,7 @@ for l = 1:l_length
             % assemble the net using layers
             quant.Weights = trans{2}(quant.Weights);
             W_sse = sum(reshape(quant.Weights(r,c,:,:) - neural.Layers(l_ind).Weights(r,c,:,:),[],1).^2);
-            ournet = modifyLayers(neural,quant);
+            ournet = replaceLayers(neural,quant);
 
             parfor f = 1:testsize
                 X = imds.readimage(f);
