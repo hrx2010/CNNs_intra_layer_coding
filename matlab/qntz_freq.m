@@ -38,8 +38,6 @@ for l = 1:l_length
     l_ind = l_inds(l);
     layer = neural.Layers(l_ind);
     layer.Weights = trans{1}(layer.Weights);
-    % layers = neural.Layers;
-    % layers(l_ind).Weights = trans{1}(layers(l_ind).Weights);
     [h,w,p,q] = size(layer.Weights);
 
     deltas = zeros(maxsteps,h*w,1)*NaN;
