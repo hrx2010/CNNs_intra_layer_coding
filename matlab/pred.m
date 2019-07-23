@@ -1,8 +1,4 @@
-function [Y_hat,Y_cat] = pred(neural,nclass,images,output)
-    if output == -1
-        output = length(neural.Layers);
-    end
-    outlayer = neural.Layers(output).Name;
+function [Y_hat,Y_cat] = pred(neural,nclass,images,outlayer)
     inputdim = nclass.Layers(1).InputSize;
     numparts = images.numpartitions(gcp);
     Y_hat = cell(numparts,1);

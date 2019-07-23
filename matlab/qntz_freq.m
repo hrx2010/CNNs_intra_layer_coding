@@ -20,7 +20,7 @@ trans = {str2func(tranname), str2func(['i',tranname])};
 
 l_inds = findconv(neural.Layers); % or specify the layer number directly
 l_length = length(l_inds);
-l_output = l_inds(1); % set to -1 for the final activation.
+l_output = 'conv1'; % set to -1 for the final activation.
 
 hist_delta = cell(l_length,1);
 hist_coded = cell(l_length,1);
@@ -30,7 +30,7 @@ hist_Y_top = cell(l_length,1);
 
 Y = pred(neural,nclass,images,l_output);
 
-for l = 1:l_length
+for l = 1:1%l_length
     l_ind = l_inds(l);
     layer = neural.Layers(l_ind);
     layer.Weights = trans{1}(layer.Weights);
@@ -70,9 +70,6 @@ for l = 1:l_length
                 break
             end
         end
-    end
-    if l_ind == l_output
-        break
     end
 end
 save(sprintf('%s_%s_%d_%d',archname,tranname,l_output,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
