@@ -27,7 +27,7 @@ hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
-Y = predict(neural,images)';
+Y = pred(neural,nclass,images);
 
 for l = 1:l_length
     l_ind = l_inds(l);
@@ -55,8 +55,7 @@ for l = 1:l_length
             quant.Weights = trans{2}(quant.Weights);
             ournet = replaceLayers(neural,quant);
 
-            Y_hats = predict(ournet,images)';
-            Y_cats = classify(nclass,Y_hats)';
+            [Y_hats,Y_cats] = pred(ournet,nclass,images);
             hist_Y_sse{l}(j,i,:) = mean((Y_hats - Y).^2);
             hist_Y_top{l}(j,i,:) = images.Labels == Y_cats;
             hist_W_sse{l}(j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_ind).Weights(r,c,:)).^2);
@@ -72,4 +71,4 @@ for l = 1:l_length
         end
     end
 end
-%save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save([archname,'_',tranname,'_val_',num2str(testsize)],'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
