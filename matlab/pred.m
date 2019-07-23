@@ -1,4 +1,5 @@
-function [Y_hat,Y_cat] = pred(neural,nclass,images,outlayer)
+function [Y_hat,Y_cat] = pred(neural,nclass,images,output)
+    outlayer = neural.Layers(output).Name;
     inputdim = nclass.Layers(1).InputSize;
     numparts = images.numpartitions(gcp);
     Y_hat = cell(numparts,1);

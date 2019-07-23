@@ -18,9 +18,9 @@ neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
 trans = {str2func(tranname), str2func(['i',tranname])};
 
-l_inds = findconv(neural.Layers); % or specify the layer number directly
-l_length = length(l_inds);
-l_output = 'conv1'; % set to -1 for the final activation.
+l_kernel = findconv(neural.Layers); 
+l_length = length(l_kernel);
+l_output = length(neural.Layers); % or specify the layer number directly
 
 hist_delta = cell(l_length,1);
 hist_coded = cell(l_length,1);
@@ -30,8 +30,8 @@ hist_Y_top = cell(l_length,1);
 
 Y = pred(neural,nclass,images,l_output);
 
-for l = 1:1%l_length
-    l_ind = l_inds(l);
+for l = 1:l_length
+    l_ind = l_kernel(l);
     layer = neural.Layers(l_ind);
     layer.Weights = trans{1}(layer.Weights);
     [h,w,p,q] = size(layer.Weights);
@@ -72,4 +72,4 @@ for l = 1:1%l_length
         end
     end
 end
-save(sprintf('%s_%s_%d_%d',archname,tranname,l_output,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save(sprintf('%s_%s_%03d_%d',archname,tranname,l_output,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
