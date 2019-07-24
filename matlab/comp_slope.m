@@ -29,9 +29,9 @@ hist_Y_top = cell(l_length,1);
 
 Y = pred(neural,nclass,images);
 
+layers = neural.Layers(l_kernel);
 for l = 1:l_length
-    l_ind = l_kernel(l);
-    layer = neural.Layers(l_ind);
+    layer = layers(l);
     layer.Weights = trans{1}(layer.Weights);
     [h,w,p,q] = size(layer.Weights);
 
@@ -58,7 +58,7 @@ for l = 1:l_length
             [Y_hats,Y_cats] = pred(ournet,nclass,images);
             hist_Y_sse{l}(j,i,:) = mean((Y_hats - Y).^2);
             hist_Y_top{l}(j,i,:) = images.Labels == Y_cats;
-            hist_W_sse{l}(j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_ind).Weights(r,c,:)).^2);
+            hist_W_sse{l}(j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_kernel(l)).Weights(r,c,:)).^2);
             hist_delta{l}(j,i,1) = delta;
             hist_coded{l}(j,i,1) = coded;
 

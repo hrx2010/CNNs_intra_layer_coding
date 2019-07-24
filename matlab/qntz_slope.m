@@ -11,7 +11,7 @@ labeldir = './ILSVRC2012_val.txt';
 tranname = 'dft2';
 testsize = 1024;
 maxsteps = 96;
-
+load(sprintf('%s_%s_val_%d',archname,tranname,testsize));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
@@ -28,7 +28,7 @@ hist_sum_coded = zeros(maxsteps,1)*NaN;
 hist_sum_W_sse = zeros(maxsteps,1)*NaN;
 
 Y = pred(neural,nclass,images);
-load(sprintf('%s_%s_val_%d',archname,tranname,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+
 for j = 1:maxsteps
     slope = sqrt(2^j)/2^48;
     ydist = cell(l_length,1);
@@ -37,12 +37,10 @@ for j = 1:maxsteps
     wdist = cell(l_length,1);
     denom = cell(l_length,1);
 
-    layers = neural.Layers;
+    quants = neural.Layers(l_kernel);
     for l = 1:l_length
-        l_ind = l_kernel(l);
-        quant = layers(l_ind);
-        quant.Weights = trans{1}(quant.Weights);
-        [h,w,p,q] = size(quant.Weights);
+        quants(l).Weights = trans{1}(quants(l).Weights);
+        [h,w,p,q] = size(quants(l).Weights);
 
         ydist{l} = lambda2points(hist_coded{l},mean(hist_Y_sse{l},3),hist_Y_sse{l},slope);
         coded{l} = lambda2points(hist_coded{l},mean(hist_Y_sse{l},3),hist_coded{l},slope);
@@ -51,14 +49,13 @@ for j = 1:maxsteps
         for i = 1:h*w
             [r,c] = ind2sub([h,w],i);
             % quantize for the given lambda
-            quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),delta{l}(i));
-            assert(qentropy(quant.Weights(r,c,:))*(p*q) == coded{l}(i));
+            quants(l).Weights(r,c,:) = quantize(quants(l).Weights(r,c,:),delta{l}(i));
+            assert(qentropy(quants(l).Weights(r,c,:))*(p*q) == coded{l}(i));
         end
-        quant.Weights = trans{2}(quant.Weights);
-        layers(l_ind) = quant;
-        wdist{l} = double(sum(reshape(quant.Weights - neural.Layers(l_ind).Weights,h*w,[]).^2,2));
+        quants(l).Weights = trans{2}(quants(l).Weights);
+        wdist{l} = double(sum(reshape(quants(l).Weights - neural.Layers(l_kernel(l)).Weights,h*w,[]).^2,2));
     end
-    ournet = replaceLayers(neural,layers);
+    ournet = replaceLayers(neural,quants);
 
     ydist = cell2mat(ydist);
     coded = cell2mat(coded);
