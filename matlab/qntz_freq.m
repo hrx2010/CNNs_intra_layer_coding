@@ -20,7 +20,6 @@ trans = {str2func(tranname), str2func(['i',tranname])};
 
 l_kernel = findconv(neural.Layers); 
 l_length = length(l_kernel);
-l_output = length(neural.Layers); % or specify the layer number directly
 
 hist_delta = cell(l_length,1);
 hist_coded = cell(l_length,1);
@@ -28,7 +27,7 @@ hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
-Y = pred(neural,nclass,images,l_output);
+Y = pred(neural,nclass,images);
 
 for l = 1:l_length
     l_ind = l_kernel(l);
@@ -56,7 +55,7 @@ for l = 1:l_length
             quant.Weights = trans{2}(quant.Weights);
             ournet = replaceLayers(neural,quant);
 
-            [Y_hats,Y_cats] = pred(ournet,nclass,images,l_output);
+            [Y_hats,Y_cats] = pred(ournet,nclass,images);
             hist_Y_sse{l}(j,i,:) = mean((Y_hats - Y).^2);
             hist_Y_top{l}(j,i,:) = images.Labels == Y_cats;
             hist_W_sse{l}(j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_ind).Weights(r,c,:)).^2);
@@ -65,11 +64,11 @@ for l = 1:l_length
 
             disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
                  archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(hist_Y_sse{l}(j,i,:)), ...
-                 hist_W_sse{l}(j,i,1), mean(hist_Y_top{l}(j,i,:))*100, coded/(p*q)));
+                 hist_W_sse{l}(j,i,1), 100*mean(hist_Y_top{l}(j,i,:)), coded/(p*q)));
             if coded == 0
                 break
             end
         end
     end
 end
-save(sprintf('%s_%s_%03d_%d',archname,tranname,l_output,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save(sprintf('%s_%s_val_%d',archname,tranname,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
