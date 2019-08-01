@@ -43,14 +43,14 @@ for l = 1:l_length
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = 2^floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))/1024));
+        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
         coded = Inf;
-        for j = 1:maxsteps
-            for k = 1:5 %number of bits
-                B = 3 + k;
+        for k = 1:8 %number of bits
+            B = k;
+            for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = scale*(2^(j-1));
+                delta = scale*(2^(j-10));
                 quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),delta,B);
                 coded = qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
