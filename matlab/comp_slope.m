@@ -11,6 +11,7 @@ labeldir = './ILSVRC2012_val.txt';
 tranname = 'dft2';
 testsize = 1024;
 maxsteps = 64;
+maxrates = 8;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
@@ -35,17 +36,17 @@ for l = 1:l_length
     layer.Weights = trans{1}(layer.Weights);
     [h,w,p,q] = size(layer.Weights);
 
-    hist_delta{l} = zeros(maxsteps,h*w,1)*NaN;
-    hist_coded{l} = zeros(maxsteps,h*w,1)*NaN;
-    hist_W_sse{l} = zeros(maxsteps,h*w,1)*NaN;
-    hist_Y_sse{l} = zeros(maxsteps,h*w,testsize)*NaN;
-    hist_Y_top{l} = zeros(maxsteps,h*w,testsize)*NaN;
+    hist_delta{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
+    hist_coded{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
+    hist_W_sse{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
+    hist_Y_sse{l} = zeros(maxrates,maxsteps,h*w,testsize)*NaN;
+    hist_Y_top{l} = zeros(maxrates,maxsteps,h*w,testsize)*NaN;
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
         scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
         coded = Inf;
-        for k = 1:8 %number of bits
+        for k = 1:maxrates %number of bits
             B = k;
             for j = 1:maxsteps
                 % quantize each of the q slices
