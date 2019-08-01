@@ -1,4 +1,9 @@
-function bits = qentropy(symbols)
+function bits = qentropy(symbols,B)
+    if B ~= 0
+        bits = B;
+        return
+    end
+
     [~,~,symbols] = unique(symbols(:));
     counts = accumarray(symbols(:),1);
     counts = counts/sum(counts);

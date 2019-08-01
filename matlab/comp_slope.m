@@ -46,27 +46,30 @@ for l = 1:l_length
         scale = 2^floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))/1024));
         coded = Inf;
         for j = 1:maxsteps
-            % quantize each of the q slices
-            quant = layer;
-            delta = scale*sqrt(2^(j-1));
-            quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),delta);
-            coded = qentropy(quant.Weights(r,c,:))*(p*q);
-            % assemble the net using layers
-            quant.Weights = trans{2}(quant.Weights);
-            ournet = replaceLayers(neural,quant);
+            for k = 1:5 %number of bits
+                B = 3 + k;
+                % quantize each of the q slices
+                quant = layer;
+                delta = scale*(2^(j-1));
+                quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),delta,B);
+                coded = qentropy(quant.Weights(r,c,:),B)*(p*q);
+                % assemble the net using layers
+                quant.Weights = trans{2}(quant.Weights);
+                ournet = replaceLayers(neural,quant);
 
-            [Y_hats,Y_cats] = pred(ournet,nclass,images);
-            hist_Y_sse{l}(j,i,:) = mean((Y_hats - Y).^2);
-            hist_Y_top{l}(j,i,:) = images.Labels == Y_cats;
-            hist_W_sse{l}(j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_kernel(l)).Weights(r,c,:)).^2);
-            hist_delta{l}(j,i,1) = delta;
-            hist_coded{l}(j,i,1) = coded;
+                [Y_hats,Y_cats] = pred(ournet,nclass,images);
+                hist_Y_sse{l}(k,j,i,:) = mean((Y_hats - Y).^2);
+                hist_Y_top{l}(k,j,i,:) = images.Labels == Y_cats;
+                hist_W_sse{l}(k,j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_kernel(l)).Weights(r,c,:)).^2);
+                hist_delta{l}(k,j,i,1) = delta;
+                hist_coded{l}(k,j,i,1) = coded;
 
-            disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                 archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(hist_Y_sse{l}(j,i,:)), ...
-                 hist_W_sse{l}(j,i,1), 100*mean(hist_Y_top{l}(j,i,:)), coded/(p*q)));
-            if coded == 0
-                break
+                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
+                             archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(hist_Y_sse{l}(k,j,i,:)), ...
+                             hist_W_sse{l}(k,j,i,1), 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
+                if coded == 0
+                    break
+                end
             end
         end
     end
