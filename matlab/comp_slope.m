@@ -44,7 +44,7 @@ for l = 1:l_length
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
+        scale = 2^floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
         coded = Inf;
         for k = 1:maxrates %number of bits
             B = k;
