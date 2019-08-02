@@ -44,14 +44,14 @@ for l = 1:l_length
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = 2^floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
+        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 10;
         coded = Inf;
         for k = 1:maxrates %number of bits
             B = k;
             for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = scale*(2^(j-10));
+                delta = 2^(scale+j-1);
                 quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),delta,B);
                 coded = qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
@@ -66,7 +66,7 @@ for l = 1:l_length
                 hist_coded{l}(k,j,i,1) = coded;
 
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, h*w, log2(scale), log2(delta), mean(hist_Y_sse{l}(k,j,i,:)), ...
+                             archname, tranname, l, l_length, i, h*w, scale, delta, mean(hist_Y_sse{l}(k,j,i,:)), ...
                              hist_W_sse{l}(k,j,i,1), 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
                 if coded == 0
                     break
