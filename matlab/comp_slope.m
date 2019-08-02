@@ -68,16 +68,17 @@ for l = 1:l_length
                 hist_coded{l}(k,j,i,1) = coded;
                 mean_Y_sse = mean(hist_Y_sse{l}(k,j,i,:));
                 mean_W_sse = mean(hist_W_sse{l}(k,j,i,1));
-                if  mean_Y_sse > last_Y_sse && 
-                    mean_W_sse > last_W_sse
+                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
+                             archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
+                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
+                if (mean_Y_sse > last_Y_sse) && 
+                   (mean_W_sse > last_W_sse)
                     break;
                 else
                     last_Y_sse = mean_Y_sse;
                     last_W_sse = mean_W_sse;
                 end
-                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
+
             end
         end
     end
