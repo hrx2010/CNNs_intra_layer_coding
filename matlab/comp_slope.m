@@ -51,8 +51,8 @@ for l = 1:l_length
             for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = 2^(scale+j-1);
-                quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),delta,B);
+                delta = scale + (j-1);
+                quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
                 coded = qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant.Weights = trans{2}(quant.Weights);
