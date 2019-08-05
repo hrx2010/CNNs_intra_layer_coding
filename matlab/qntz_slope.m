@@ -42,16 +42,16 @@ for j = 1:maxsteps
         quants(l).Weights = trans{1}(quants(l).Weights);
         [h,w,p,q] = size(quants(l).Weights);
 
-        [hist_Y_sse{l},hist_delta{l},hist_coded{l}] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
-        ydist{l} = lambda2points(hist_coded{l},hist_Y_sse{l},hist_Y_sse{l},slope);
-        coded{l} = lambda2points(hist_coded{l},hist_Y_sse{l},hist_coded{l},slope);
-        delta{l} = lambda2points(hist_coded{l},hist_Y_sse{l},hist_delta{l},slope);
+        [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
+        ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,slope);
+        coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,slope);
+        delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,slope);
         denom{l} = ones(size(coded{l}))*(p*q);
         for i = 1:h*w
             [r,c] = ind2sub([h,w],i);
             % quantize for the given lambda
-            quants(l).Weights(r,c,:) = quantize(quants(l).Weights(r,c,:),delta{l}(i));
-            assert(qentropy(quants(l).Weights(r,c,:))*(p*q) == coded{l}(i));
+            quants(l).Weights(r,c,:) = quantize(quants(l).Weights(r,c,:),2^delta{l}(i),coded{l}(i)/(p*q));
+            %assert(qentropy(quants(l).Weights(r,c,:))*(p*q) == coded{l}(i));
         end
         quants(l).Weights = trans{2}(quants(l).Weights);
         wdist{l} = double(sum(reshape(quants(l).Weights - neural.Layers(l_kernel(l)).Weights,h*w,[]).^2,2));
