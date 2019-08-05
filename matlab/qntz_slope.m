@@ -42,9 +42,10 @@ for j = 1:maxsteps
         quants(l).Weights = trans{1}(quants(l).Weights);
         [h,w,p,q] = size(quants(l).Weights);
 
-        ydist{l} = lambda2points(hist_coded{l},mean(hist_Y_sse{l},3),hist_Y_sse{l},slope);
-        coded{l} = lambda2points(hist_coded{l},mean(hist_Y_sse{l},3),hist_coded{l},slope);
-        delta{l} = lambda2points(hist_coded{l},mean(hist_Y_sse{l},3),hist_delta{l},slope);
+        [hist_Y_sse{l},hist_delta{l},hist_coded{l}] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
+        ydist{l} = lambda2points(hist_coded{l},hist_Y_sse{l},hist_Y_sse{l},slope);
+        coded{l} = lambda2points(hist_coded{l},hist_Y_sse{l},hist_coded{l},slope);
+        delta{l} = lambda2points(hist_coded{l},hist_Y_sse{l},hist_delta{l},slope);
         denom{l} = ones(size(coded{l}))*(p*q);
         for i = 1:h*w
             [r,c] = ind2sub([h,w],i);
