@@ -30,7 +30,7 @@ hist_sum_W_sse = zeros(maxsteps,1)*NaN;
 Y = pred(neural,nclass,images);
 
 for j = 1:maxsteps
-    slope = sqrt(2^j)/2^48;
+    slope = -32 + 0.50*(j-1);
     ydist = cell(l_length,1);
     coded = cell(l_length,1);
     delta = cell(l_length,1);
@@ -43,9 +43,9 @@ for j = 1:maxsteps
         [h,w,p,q] = size(quants(l).Weights);
 
         [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
-        ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,slope);
-        coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,slope);
-        delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,slope);
+        ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
+        coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
+        delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
         denom{l} = ones(size(coded{l}))*(p*q);
         for i = 1:h*w
             [r,c] = ind2sub([h,w],i);
@@ -72,7 +72,7 @@ for j = 1:maxsteps
     hist_sum_coded(j,1,1) = sum(coded(:))/sum(denom(:));
 
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
-         archname, tranname, log2(slope), mean(hist_sum_Y_sse(j,1,:)), mean(pred_sum_Y_sse(j,1,:)), ...
+         archname, tranname, slope, mean(hist_sum_Y_sse(j,1,:)), mean(pred_sum_Y_sse(j,1,:)), ...
          mean(hist_sum_W_sse(j,1)), 100*mean(hist_sum_Y_top(j,1,:)), mean(hist_sum_coded(j,1))));
     if sum(coded(:)) == 0
         break;
