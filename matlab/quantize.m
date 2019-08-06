@@ -3,13 +3,9 @@ function xhat = quantize(x,delta,B)
         minpoint = -2^(B-1)*delta;
         maxpoint = +2^(B-1)*delta - delta;
     else
-        minpoint = -Inf;
-        maxpoint = +Inf;
+        minpoint = 0;
+        maxpoint = 0;
     end
 
-    if delta == 0
-        xhat = x;
-    else
-        xhat = min(maxpoint,max(minpoint,delta*(floor(x/delta+0.5))));
-    end
+    xhat = min(maxpoint,max(minpoint,delta*(floor(x/delta+0.5))));
 end

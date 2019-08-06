@@ -29,6 +29,7 @@ hist_Y_top = cell(l_length,1);
 
 hist_gainX = cell(l_length,1);
 hist_gainT = cell(l_length,1);
+hist_coded = ones(l_length,1);
 
 layers = neural.Layers(l_kernel);
 for l = 1:l_length
@@ -39,11 +40,21 @@ for l = 1:l_length
 
     X_psd = real(diag3(conj(permute(blkfft2(conj(permute(blkfft2(blktoeplitz(autocorr2(X,h,w)),h,w),[2,1,3])),h,w),[2,1,3]))));
     T_psd = mean(abs(fft2(T)).^2,4)*(1/h/w);
+    T_ssd = mean(mean(T.^2,1),2);
 
     hist_gainX{l} = mean(X_psd(:))/geomean(X_psd(:));
-    hist_gainT{l} = mean(T_psd(:))/geomean(T_psd(:));
+    %hist_gainX{l} = geomean(X_ssd(:))/geomean(X_psd(:));
+    hist_gainT{l} = geomean(T_ssd(:))/geomean(T_psd(:));
+    hist_coded(l) = h*w*p*q*g;
 
     disp(sprintf('Coding gain for layer %03d is %5.2f (%5.2f, %5.2f) dB (%5d coefficients)', ...
                  l, 10*log10(mean(hist_gainX{l}.*hist_gainT{l})), 10*log10(mean(hist_gainX{l})), ...
-                 10*log10(mean(hist_gainT{l})), h*w*p*q*g));
+                 10*log10(mean(hist_gainT{l})), hist_coded(l)));
 end
+
+mean_gainX = sum(cell2mat(hist_gainX).*hist_coded)/sum(hist_coded);
+mean_gainT = sum(cell2mat(hist_gainT).*hist_coded)/sum(hist_coded);
+mean_gains = sum(cell2mat(hist_gainX).*cell2mat(hist_gainT).*hist_coded)/sum(hist_coded);
+
+disp(sprintf('Coding gain for layer all is %5.2f (%5.2f, %5.2f) dB (%5d coefficients)', ...
+             10*log10(mean_gains), 10*log10(mean_gainX), 10*log10(mean_gainT), sum(hist_coded)));
