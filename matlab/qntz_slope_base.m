@@ -73,7 +73,7 @@ for j = 1:maxsteps
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
          archname, tranname, slope, mean(hist_sum_Y_sse(j,1,:)), mean(pred_sum_Y_sse(j,1,:)), ...
          mean(hist_sum_W_sse(j,1)), 100*mean(hist_sum_Y_top(j,1,:)), mean(hist_sum_coded(j,1))));
-    if sum(coded(:)) == 0
+    if hist_sum_coded(j) == 1
         break;
     end
 end
