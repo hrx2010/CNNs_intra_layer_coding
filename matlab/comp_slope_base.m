@@ -8,10 +8,10 @@ close all;
 archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'dft2';
+tranname = 'idt2';
 testsize = 1024;
 maxsteps = 32;
-maxrates = 8;
+maxrates = 10;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
@@ -19,7 +19,7 @@ neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
 trans = {str2func(tranname), str2func(['i',tranname])};
 
-l_kernel = findconv(neural.Layers); 
+l_kernel = findconv(neural.Layers);
 l_length = length(l_kernel);
 
 hist_delta = cell(l_length,1);
@@ -46,13 +46,13 @@ for l = 1:l_length
         scale = floor(log2(sqrt(mean(layer.Weights(:).^2)))) - 10;
         coded = Inf;
         for k = 1:maxrates %number of bits
-            B = k;
+            B = k - 1;
             last_Y_sse = Inf;
             last_W_sse = Inf;
             for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = scale + (j-1);
+                delta = scale + 0.5*(j-1);
                 quant.Weights(:) = quantize(quant.Weights(:),2^delta,B);
                 coded = qentropy(quant.Weights(:),B)*(h*w*p*q);
                 % assemble the net using layers
@@ -67,11 +67,12 @@ for l = 1:l_length
                 hist_coded{l}(k,j,i,1) = coded;
                 mean_Y_sse = mean(hist_Y_sse{l}(k,j,i,:));
                 mean_W_sse = mean(hist_W_sse{l}(k,j,i,1));
-                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
+                disp(sprintf('%s %s | layer: %03d/%03d, band: all/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
+                             archname, tranname, l, l_length, h*w, scale, delta, mean_Y_sse, ...
                              mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(h*w*p*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
-                   (mean_W_sse > last_W_sse)
+                   (mean_W_sse > last_W_sse) || ...
+                   (B == 0)     
                     break;
                 end
                 last_Y_sse = mean_Y_sse;

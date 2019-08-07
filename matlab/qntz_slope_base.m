@@ -8,7 +8,7 @@ close all;
 archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'dft2';
+tranname = 'idt2';
 testsize = 1024;
 maxsteps = 96;
 load(sprintf('%s_%s_base_val_%d',archname,tranname,testsize));
@@ -46,7 +46,7 @@ for j = 1:maxsteps
         ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
         delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
-        denom{l} = ones(size(coded{l}))*(p*q);
+        denom{l} = ones(size(coded{l}))*(h*w*p*q);
         for i = 1 %:h*w
             % quantize for the given lambda
             quants(l).Weights(:) = quantize(quants(l).Weights(:),2^delta{l}(i),coded{l}(i)/(h*w*p*q));
@@ -73,10 +73,10 @@ for j = 1:maxsteps
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
          archname, tranname, slope, mean(hist_sum_Y_sse(j,1,:)), mean(pred_sum_Y_sse(j,1,:)), ...
          mean(hist_sum_W_sse(j,1)), 100*mean(hist_sum_Y_top(j,1,:)), mean(hist_sum_coded(j,1))));
-    if hist_sum_coded(j) == 1
+    if hist_sum_coded(j) == 0
         break;
     end
 end
 
-save(sprintf('%s_%s_sum_%d',archname,tranname,testsize),'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse',...
+save(sprintf('%s_%s_base_sum_%d',archname,tranname,testsize),'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse',...
      'hist_sum_Y_top');
