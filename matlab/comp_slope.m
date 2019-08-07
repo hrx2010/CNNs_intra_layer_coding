@@ -11,7 +11,7 @@ labeldir = './ILSVRC2012_val.txt';
 tranname = 'dft2';
 testsize = 1024;
 maxsteps = 32;
-maxrates = 8;
+maxrates = 12;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
@@ -47,7 +47,7 @@ for l = 1:l_length
         scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 10;
         coded = Inf;
         for k = 1:maxrates %number of bits
-            B = k;
+            B = k - 1;
             last_Y_sse = Inf;
             last_W_sse = Inf;
             for j = 1:maxsteps
@@ -72,7 +72,8 @@ for l = 1:l_length
                              archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
                              mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
-                   (mean_W_sse > last_W_sse)
+                   (mean_W_sse > last_W_sse) || ...
+                   (B == 0)
                     break;
                 end
                 last_Y_sse = mean_Y_sse;
