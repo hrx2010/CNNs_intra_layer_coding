@@ -8,10 +8,10 @@ close all;
 archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'dft2';
+tranname = 'idt2';
 testsize = 1024;
 maxsteps = 32;
-maxrates = 12;
+maxrates = 17;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
@@ -44,8 +44,9 @@ for l = 1:l_length
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 10;
+        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 4;
         coded = Inf;
+        offset = scale;
         for k = 1:maxrates %number of bits
             B = k - 1;
             last_Y_sse = Inf;
@@ -53,7 +54,7 @@ for l = 1:l_length
             for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = scale + (j-1);
+                delta = offset + 0.5*(j-1);
                 quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
                 coded = qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
@@ -74,6 +75,7 @@ for l = 1:l_length
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
+                    offset = delta - 4;
                     break;
                 end
                 last_Y_sse = mean_Y_sse;

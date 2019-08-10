@@ -11,7 +11,7 @@ labeldir = './ILSVRC2012_val.txt';
 tranname = 'idt2';
 testsize = 1024;
 maxsteps = 32;
-maxrates = 10;
+maxrates = 17;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
@@ -43,8 +43,9 @@ for l = 1:l_length
     hist_Y_top{l} = zeros(maxrates,maxsteps,1,testsize)*NaN;
     
     for i = 1 % treat all frequencies or bands as one
-        scale = floor(log2(sqrt(mean(layer.Weights(:).^2)))) - 10;
+        scale = floor(log2(sqrt(mean(layer.Weights(:).^2)))) - 4;
         coded = Inf;
+        offset = scale;
         for k = 1:maxrates %number of bits
             B = k - 1;
             last_Y_sse = Inf;
@@ -52,7 +53,7 @@ for l = 1:l_length
             for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = scale + 0.5*(j-1);
+                delta = offset + 0.5*(j-1);
                 quant.Weights(:) = quantize(quant.Weights(:),2^delta,B);
                 coded = qentropy(quant.Weights(:),B)*(h*w*p*q);
                 % assemble the net using layers
@@ -73,6 +74,7 @@ for l = 1:l_length
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)     
+                    offset = delta - 4;
                     break;
                 end
                 last_Y_sse = mean_Y_sse;
