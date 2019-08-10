@@ -83,4 +83,5 @@ for l = inlayers
         end
     end
 end
-save(sprintf('%s_%s_val_%d',archname,tranname,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save(sprintf('%s_%s_val_%d_%s',archname,tranname,testsize,outlayer),...
+     'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');

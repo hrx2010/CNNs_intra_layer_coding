@@ -10,14 +10,14 @@ labeldir = './ILSVRC2012_val.txt';
 % tranname = 'dft2';
 % testsize = 1024;
 maxsteps = 96;
-load(sprintf('%s_%s_val_%d',archname,tranname,testsize));
+load(sprintf('%s_%s_val_%d_%s',archname,tranname,testsize,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
 trans = {str2func(tranname), str2func(['i',tranname])};
 
-% l_kernel = findconv(neural.Layers); % or specify the layer number directly
+l_kernel = findconv(neural.Layers); % or specify the layer number directly
 l_length = length(l_kernel);
 
 hist_sum_Y_top = zeros(maxsteps,1,testsize)*NaN;

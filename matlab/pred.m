@@ -1,6 +1,6 @@
 function [Y_hat,Y_cat] = pred(neural,nclass,images,outlayer)
     if nargin == 3
-        outlayer = length(neural.Layers).Name;
+        outlayer = neural.Layers(end).Name;
     end
     inputdim = nclass.Layers(1).InputSize;
     numparts = images.numpartitions(gcp);
