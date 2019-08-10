@@ -1,15 +1,14 @@
-clear all;
-close all;
+function comp_slope(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
-archname = 'alexnet';
+% archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'idt2';
-testsize = 1024;
+% tranname = 'idt2';
+% testsize = 1024;
 maxsteps = 32;
 maxrates = 17;
 
@@ -28,10 +27,10 @@ hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
-Y = pred(neural,nclass,images);
+Y = pred(neural,nclass,images,outlayer);
 
 layers = neural.Layers(l_kernel);
-for l = 1:l_length
+for l = inlayers
     layer = layers(l);
     layer.Weights = trans{1}(layer.Weights);
     [h,w,p,q] = size(layer.Weights);
@@ -61,7 +60,7 @@ for l = 1:l_length
                 quant.Weights = trans{2}(quant.Weights);
                 ournet = replaceLayers(neural,quant);
 
-                [Y_hats,Y_cats] = pred(ournet,nclass,images);
+                [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
                 hist_Y_sse{l}(k,j,i,:) = mean((Y_hats - Y).^2);
                 hist_Y_top{l}(k,j,i,:) = images.Labels == Y_cats;
                 hist_W_sse{l}(k,j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_kernel(l)).Weights(r,c,:)).^2);
