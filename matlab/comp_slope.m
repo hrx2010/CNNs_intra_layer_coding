@@ -43,7 +43,7 @@ for l = inlayers
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 4;
+        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
         coded = Inf;
         offset = scale;
         for k = 1:maxrates %number of bits
