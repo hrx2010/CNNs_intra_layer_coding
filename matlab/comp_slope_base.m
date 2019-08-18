@@ -1,17 +1,16 @@
-clear all;
-close all;
+function comp_slope_base(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
-archname = 'alexnet';
+% archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'idt2';
-testsize = 1024;
+% tranname = 'idt2';
+% testsize = 1024;
 maxsteps = 32;
-maxrates = 17;
+maxrates = 25;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
@@ -28,10 +27,10 @@ hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
-Y = pred(neural,nclass,images);
+Y = pred(neural,nclass,images,outlayer);
 
 layers = neural.Layers(l_kernel);
-for l = 1:l_length
+for l = inlayers
     layer = layers(l);
     layer.Weights = trans{1}(layer.Weights);
     [h,w,p,q] = size(layer.Weights);
@@ -43,7 +42,7 @@ for l = 1:l_length
     hist_Y_top{l} = zeros(maxrates,maxsteps,1,testsize)*NaN;
     
     for i = 1 % treat all frequencies or bands as one
-        scale = floor(log2(sqrt(mean(layer.Weights(:).^2)))) - 4;
+        scale = floor(log2(sqrt(mean(layer.Weights(:).^2))));
         coded = Inf;
         offset = scale;
         for k = 1:maxrates %number of bits
@@ -60,7 +59,7 @@ for l = 1:l_length
                 quant.Weights = trans{2}(quant.Weights);
                 ournet = replaceLayers(neural,quant);
 
-                [Y_hats,Y_cats] = pred(ournet,nclass,images);
+                [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
                 hist_Y_sse{l}(k,j,i,:) = mean((Y_hats - Y).^2);
                 hist_Y_top{l}(k,j,i,:) = images.Labels == Y_cats;
                 hist_W_sse{l}(k,j,i,1) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
@@ -83,4 +82,5 @@ for l = 1:l_length
         end
     end
 end
-save(sprintf('%s_%s_base_val_%d',archname,tranname,testsize),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save(sprintf('%s_%s_base_val_%d_%s',archname,tranname,testsize,outlayer),...
+     'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');

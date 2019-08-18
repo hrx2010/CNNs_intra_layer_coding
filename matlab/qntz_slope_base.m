@@ -1,15 +1,14 @@
-clear all;
-close all;
+function qntz_slope_base(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
 % of test files to predict can be set manually or set to 0 to predict
 % all files in the datastore (not recommended)
-archname = 'alexnet';
+% archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-tranname = 'idt2';
-testsize = 1024;
+% tranname = 'idt2';
+% testsize = 1024;
 maxsteps = 96;
 load(sprintf('%s_%s_base_val_%d',archname,tranname,testsize));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
@@ -38,7 +37,7 @@ for j = 1:maxsteps
     denom = cell(l_length,1);
 
     quants = neural.Layers(l_kernel);
-    for l = 1:l_length
+    for l = inlayers
         quants(l).Weights = trans{1}(quants(l).Weights);
         [h,w,p,q] = size(quants(l).Weights);
 
@@ -47,7 +46,7 @@ for j = 1:maxsteps
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
         delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
         denom{l} = ones(size(coded{l}))*(h*w*p*q);
-        for i = 1 %:h*w
+        for i = 1
             % quantize for the given lambda
             quants(l).Weights(:) = quantize(quants(l).Weights(:),2^delta{l}(i),coded{l}(i)/(h*w*p*q));
             %assert(qentropy(quants(l).Weights(:))*(h*w*p*q) == coded{l}(i));
@@ -78,5 +77,5 @@ for j = 1:maxsteps
     end
 end
 
-save(sprintf('%s_%s_base_sum_%d',archname,tranname,testsize),'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse',...
-     'hist_sum_Y_top');
+save(sprintf('%s_%s_base_sum_%d_%d_%d_%s',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
+     'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top');

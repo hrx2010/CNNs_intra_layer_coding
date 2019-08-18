@@ -10,7 +10,7 @@ labeldir = './ILSVRC2012_val.txt';
 % tranname = 'dft2';
 % testsize = 1024;
 maxsteps = 96;
-load(sprintf('%s_%s_val_%d_%s',archname,tranname,testsize,outlayer));
+load(sprintf('%s_%s_val_%d_%d_%d_%s',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
