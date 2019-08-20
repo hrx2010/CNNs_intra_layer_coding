@@ -63,7 +63,7 @@ for l = inlayers
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
                 hist_Y_sse{l}(k,j,i,:) = mean((Y_hats - Y).^2);
                 hist_Y_top{l}(k,j,i,:) = images.Labels == Y_cats;
-                hist_W_sse{l}(k,j,i,1) = mean((quant.Weights(r,c,:) - neural.Layers(l_kernel(l)).Weights(r,c,:)).^2);
+                hist_W_sse{l}(k,j,i,1) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
                 hist_delta{l}(k,j,i,1) = delta;
                 hist_coded{l}(k,j,i,1) = coded;
                 mean_Y_sse = mean(hist_Y_sse{l}(k,j,i,:));
@@ -83,5 +83,4 @@ for l = inlayers
         end
     end
 end
-save(sprintf('%s_%s_val_%d_%s',archname,tranname,testsize,outlayer),...
-     'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save(sprintf('%s_%s_val_%d_%s',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
