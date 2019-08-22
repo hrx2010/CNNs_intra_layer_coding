@@ -1,3 +1,6 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import numpy as np 
 import tensorflow as tf 
 from tensorflow.contrib import slim 
@@ -17,27 +20,30 @@ from inferences import *
 from quantization_methods import *
 from transform_methods import *
 
-import os
 import gc
 
 # command line parameters 
 # python generate_RD_curves_vgg16.py A B C
 # A: which GPU to run
-# B: which layer to process
-# C: which kernal to process
+# B: which transform to use
+# C: number of images to use
+# D: which layer to run
 # e.g., python generate_RD_curves_vgg16.py 3 1 5 -> run GPU3 to do the statistics for the 5th kernal in layer 1.
 
 
+# number of total gpus on server
 gpu_id_str = sys.argv[1]
 gpu_id_int = int(sys.argv[1])
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id_str
 
+tranname = sys.argv[2]
 
-# number of total gpus on server
-processing_layer_id = int(sys.argv[2])
+# number of images
+max_images = int(sys.argv[3])
 
-# number of dimension
-# processing_dim_id = int(sys.argv[3])
+# which layer to run
+processing_layer_id = int(sys.argv[4])
+
 
 def set_variable_to_tensor(sess, tensor, value):
     return sess.run(tf.assign(tensor, value))
@@ -66,8 +72,8 @@ flag_inference = False
 # define quantization hyper-parameters
 max_steps = 50
 max_rates = 17
-max_images = 100
-hist_delta = [0] * num_conv_layers
+
+hist_y_mse = [0] * num_conv_layers
 hist_w_mse = [0] * num_conv_layers
 hist_coded = [0] * num_conv_layers
 hist_steps = [0] * num_conv_layers
@@ -75,7 +81,7 @@ hist_steps = [0] * num_conv_layers
 
 # transform functions
 
-tran = transforms[0] # 0: DCT, 1: DST, 2: DFT
+tran = transforms[tranname]
 # create tensorflow graph of VGG16 
 with slim.arg_scope(vgg_arg_scope()):
 	# define the tensor of input image .
@@ -125,7 +131,7 @@ for i in range(num_conv_layers):
 
 	[fh, fw, n_input, n_output] = weight_values_original.shape
 
-	hist_delta[i] = np.zeros((fh * fw , max_rates))
+	hist_y_mse[i] = np.zeros((fh * fw , max_rates))
 	hist_w_mse[i] = np.zeros((fh * fw , max_rates))
 	hist_coded[i] = np.zeros((fh * fw , max_rates))
 	hist_steps[i] = np.zeros((fh * fw , max_rates))
@@ -142,9 +148,9 @@ for i in range(num_conv_layers):
 		for k in range(max_rates):
 			B = k
 
-			hist_delta[i][j][k] = -1
-			hist_coded[i][j][k] = -1
-			hist_steps[i][j][k] = -1
+			hist_y_mse[i][j][k] = np.NaN
+			hist_coded[i][j][k] = np.NaN
+			hist_steps[i][j][k] = np.NaN
 
 			best_output_error = np.Inf
 			best_weight_error = np.Inf
@@ -169,7 +175,7 @@ for i in range(num_conv_layers):
 				curr_output_error = np.mean((last_layer_output - last_layer_output_quantized)**2)
 				curr_weight_error = np.mean((weight_values_original - inverted_quantized_weights)**2)
 
-				print('%s | trans: %s, layer: %03d/%03d, band: %03d/%03d, bits: %2d, scale: %+6.2f, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e' % (model, tran[0].__name__, i , num_conv_layers, j, fh*fw, k , scale, delta , curr_output_error , curr_weight_error))
+				print('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %+6.2f, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, rate: %5.2e' % (model, tranname, i , num_conv_layers, j, fh*fw , scale, delta , curr_output_error , curr_weight_error, k))
 
 				if curr_output_error < best_output_error:
 					best_output_error = curr_output_error
@@ -181,15 +187,12 @@ for i in range(num_conv_layers):
 				prev_output_error = curr_output_error
 				prev_weight_error = curr_weight_error
 
-			hist_delta[i][j][k] = best_output_error
+			hist_y_mse[i][j][k] = best_output_error
 			hist_w_mse[i][j][k] = best_weight_error
 			hist_steps[i][j][k] = best_weight_delta
 			hist_coded[i][j][k] = coded
-
-
-
 			
-			file_results.write("%d %d %d %f %.10f %d\n" % (i , j , k , hist_coded[i][j][k] , hist_delta[i][j][k] , hist_steps[i][j][k]))
+			file_results.write("%d %d %d %f %.10f %d\n" % (i , j , k , hist_coded[i][j][k] , hist_y_mse[i][j][k] , hist_steps[i][j][k]))
 
 			gc.collect()
 

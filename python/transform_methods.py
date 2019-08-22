@@ -60,4 +60,4 @@ def idct2(x):
 	x = np.array(x)
 	return fftpack.idct(fftpack.idct(x,axis=1,type=1,norm='ortho'),axis=0,type=1,norm='ortho')
 
-transforms = [[dct2,idct2,dft2],[dst2,idst2,idft2]]
+transforms = {'dct2' : [dct2,idct2], 'dst2' : [dst2,idst2], 'dft2': [dft2,idft2]};

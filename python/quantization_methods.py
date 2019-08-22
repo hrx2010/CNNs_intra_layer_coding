@@ -9,7 +9,7 @@ def quantize(x , q_delta , q_bits):
 
 	if q_bits != 0:
 		min_point = -(np.power(2 , (q_bits - 1))) * q_delta
-		max_point = (np.power(2 , (q_bits - 1))) * q_delta
+		max_point = +(np.power(2 , (q_bits - 1))) * q_delta - q_delta
 	else:
 		min_point = 0
 		max_point = 0
