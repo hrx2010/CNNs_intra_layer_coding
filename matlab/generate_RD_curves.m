@@ -27,7 +27,8 @@ hist_W_sse = cell(l_length,1);
 hist_Y_sse = cell(l_length,1);
 hist_Y_top = cell(l_length,1);
 
-Y = pred(neural,nclass,images,outlayer);
+[Y,Y_cats] = pred(neural,nclass,images,outlayer);
+disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
@@ -43,9 +44,9 @@ for l = inlayers
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 2;
+        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
         coded = Inf;
-        offset = scale;
+        offset = scale + 2;
         for k = 1:maxrates %number of bits
             B = k - 1;
             last_Y_sse = Inf;
@@ -53,9 +54,9 @@ for l = inlayers
             for j = 1:maxsteps
                 % quantize each of the q slices
                 quant = layer;
-                delta = offset + 0.5*(j-1);
+                delta = offset + 0.25*(j-1);
                 quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
-                coded = qentropy(quant.Weights(r,c,:),B)*(p*q);
+                coded = B*(p*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant.Weights = trans{2}(quant.Weights);
                 ournet = replaceLayers(neural,quant);
@@ -68,7 +69,7 @@ for l = inlayers
                 hist_coded{l}(k,j,i,1) = coded;
                 mean_Y_sse = mean(hist_Y_sse{l}(k,j,i,:));
                 mean_W_sse = mean(hist_W_sse{l}(k,j,i,1));
-                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+5.1f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
+                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
                              archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
                              mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
