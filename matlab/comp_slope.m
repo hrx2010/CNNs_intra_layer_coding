@@ -43,7 +43,7 @@ for l = inlayers
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
+        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2)))) - 2;
         coded = Inf;
         offset = scale;
         for k = 1:maxrates %number of bits
@@ -74,7 +74,9 @@ for l = inlayers
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
-                    offset = delta - 4;
+                    [~,j] = min(mean(hist_Y_sse{l}(k,:,i,:),4));
+                    delta = hist_delta{l}(k,j,i,1);
+                    offset = delta - 2;
                     break;
                 end
                 last_Y_sse = mean_Y_sse;
