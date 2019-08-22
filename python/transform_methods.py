@@ -1,5 +1,5 @@
 import numpy as np
-
+import scipy.fftpack as fftpack
 
 def fft2split(x):
 	x = np.array(x)
@@ -11,7 +11,7 @@ def fft2split(x):
 	x[0:int((b+1)/2-1),:] = np.real(x[0:int((b+1)/2-1),:])
 	x[int((b+1)/2):b,:] = np.imag(x[int((b+1)/2):b,:])
 	x = np.reshape(x , s)
-	
+
 	return x
 
 def ifft2split(x):
@@ -44,3 +44,20 @@ def idft2(x):
 
 	return y
 
+def dst2(x):
+	x = np.array(x)
+	return fftpack.dst(fftpack.dst(x,axis=0,type=1,norm='ortho'),axis=1,type=1,norm='ortho')
+
+def idst2(x):
+	x = np.array(x)
+	return fftpack.idst(fftpack.idst(x,axis=1,type=1,norm='ortho'),axis=0,type=1,norm='ortho')
+
+def dct2(x):
+	x = np.array(x)
+	return fftpack.dct(fftpack.dct(x,axis=0,type=1,norm='ortho'),axis=1,type=1,norm='ortho')
+
+def idct2(x):
+	x = np.array(x)
+	return fftpack.idct(fftpack.idct(x,axis=1,type=1,norm='ortho'),axis=0,type=1,norm='ortho')
+
+transforms = [[dct2,idct2,dft2],[dst2,idst2,idft2]]
