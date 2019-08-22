@@ -17,8 +17,37 @@ from inferences import *
 from quantization_methods import *
 from transform_methods import *
 
+import os
+import gc
+
+# command line parameters 
+# python generate_RD_curves_vgg16.py A B C
+# A: which GPU to run
+# B: which layer to process
+# C: which kernal to process
+# e.g., python generate_RD_curves_vgg16.py 3 1 5 -> run GPU3 to do the statistics for the 5th kernal in layer 1.
+
+
+gpu_id_str = sys.argv[1]
+gpu_id_int = int(sys.argv[1])
+os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id_str
+
+
+# number of total gpus on server
+processing_layer_id = int(sys.argv[2])
+
+# number of dimension
+processing_dim_id = int(sys.argv[3])
+
 def set_variable_to_tensor(sess, tensor, value):
     return sess.run(tf.assign(tensor, value))
+
+
+#create folder of results
+path_results = './results_RD_curves_VGG_16' 
+if not os.path.exists(path_results):
+    os.makedirs(path_results)
+
 
 # the directory of sample images.
 SAMPLES_PATH = './samples/' 
@@ -35,11 +64,13 @@ flag_inference = False
 
 
 # define quantization hyper-parameters
-max_steps = 32
-max_rates = 17
+max_steps = 50
+max_rates = 11
 hist_delta = [0] * num_conv_layers
 hist_coded = [0] * num_conv_layers
+hist_steps = [0] * num_conv_layers
 INF = 1000000000
+
 
 # create tensorflow graph of VGG16 
 with slim.arg_scope(vgg_arg_scope()):
@@ -48,23 +79,27 @@ with slim.arg_scope(vgg_arg_scope()):
 	# preprocess the input image - JPEG decoding, resizing, etc.
 	processed_images = tensor_preprocessed_input_images(input_string)
 	# define VGG16 model. 'vgg_activations' contains all the intermediate outputs of conv layers before RELU.
-	logits, _, vgg_activations, vgg_activations_after_relu = vgg_16_decomposed(processed_images, num_classes=1000, is_training=False)
+	logits, _ = vgg_16_original(processed_images, num_classes=1000, is_training=False)
 	# compute prediction scores for image classification 
 	probabilities = tf.nn.softmax(logits)
 
+
 # create tensorflow session
-config = tf.ConfigProto()
+config = tf.ConfigProto()	
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
 sess.run(tf.global_variables_initializer())
+
 
 # load parameters from the checkpoint file (vgg_16.ckpt)
 variables_to_restore = slim.get_variables_to_restore()
 init_fn = slim.assign_from_checkpoint_fn(checkpoint_file, variables_to_restore)
 init_fn(sess)
 
+
 # load all the samples of the input images
 input_images = read_samples_from_file('list_samples.txt')
+
 
 # extract all conv layers' weights. vgg_weights[i] denotes the weights of i-th conv layer. 
 vgg_weights = get_all_weights_variables(variables_to_restore)
@@ -74,24 +109,29 @@ weight_values = np.zeros((num_conv_layers,), dtype=np.object)
 last_layer_output = run_inference_VGG16_last_layer_output(sess, input_string, logits)
 last_layer_output = np.array(last_layer_output)
 
+file_results = open('%s/RD_curves_layer_%d' % (path_results , processing_layer_id) , "a+")
+
+
 # do the statistics for each conv layer.
 for i in range(num_conv_layers):
-	#i = 0
+	if i != processing_layer_id:
+		continue
 
-	# get the tensor of the weights in conv layer i.  
 	weight_values_original = sess.run(vgg_weights[i])
 
-	# get the dimensions of the tensor where fh * fw denotes the kernel size, 
-	# n_input denotes the number of inputs and n_output denotes the number of outputs.
 	[fh, fw, n_input, n_output] = weight_values_original.shape
 
-	hist_delta[i] = np.zeros((max_rates , max_steps , fh * fw))
-	hist_coded[i] = np.zeros((max_rates , max_steps , fh * fw))
+	hist_delta[i] = np.zeros((fh * fw , max_rates))
+	hist_coded[i] = np.zeros((fh * fw , max_rates))
+	hist_steps[i] = np.zeros((fh * fw , max_rates))
 
 	weight_values_original_transformed = dft2(weight_values_original)
 	weight_values_original_transformed = np.array(weight_values_original_transformed)
 
 	for j in range(fh * fw):
+		if j != processing_dim_id:
+			continue
+
 		r = int((j / fw))
 		c = int((j % fw))
 		scale = np.floor(np.log2(np.sqrt(np.mean(  np.real(weight_values_original_transformed[r,c,:,:]**2)  ))))
@@ -99,37 +139,48 @@ for i in range(num_conv_layers):
 		offset = scale
 		
 		for k in range(max_rates):
-			#B = k
 			B = k
 
-			#print('layer i %d Bit B %d' % (i , B))
+			hist_delta[i][j][k] = -1
+			hist_coded[i][j][k] = -1
+			hist_steps[i][j][k] = -1
+
+			min_output_error = INF
+			optimized_t = INF
 
 			for t in range(max_steps):
-				delta = offset + 0.5 * t
-
+				delta = offset + 0.05 * t - 2.0
+				#delta = (offset + 0.005 * t - 2.0)
+				
 				quantized_weights = np.array(weight_values_original_transformed)
-
-				#print(quantized_weights[r,c,:,:])
-
-				#print('delta %f B %f' % (delta , B))
 				quantized_weights[r,c,:,:] = quantize(quantized_weights[r,c,:,:] , np.power(2 , delta) , B) #B
 				coded = fixed_length_entropy(quantized_weights[r,c,:,:] , B) * n_input * n_output #B
 
-				#print('-----------------------')
-
-				#print(quantized_weights[r,c,:,:])
-
-				quantized_weights = np.real(idft2(quantized_weights))
+				inverted_quantized_weights = np.real(idft2(quantized_weights))
 				
-				set_variable_to_tensor(sess , vgg_weights[i] , quantized_weights)
+				set_variable_to_tensor(sess , vgg_weights[i] , inverted_quantized_weights)
 				last_layer_output_quantized = run_inference_VGG16_last_layer_output(sess, input_string, logits)
 				last_layer_output_quantized = np.array(last_layer_output_quantized)
-				
-				hist_coded[i][k][t][j] = coded
-				hist_delta[i][k][t][j] = np.mean((last_layer_output - last_layer_output_quantized)**2)
-				
-				print('layer %d , kernal (%d , %d), rate %d bits, step %d, total rate %f, output error %f' % (i , r , c , k , t , coded , hist_delta[i][k][t][j]))
 
-				set_variable_to_tensor(sess , vgg_weights[i] , weight_values_original)
-		
+				cur_output_error = np.mean((last_layer_output - last_layer_output_quantized)**2)
+
+				if t == 0 or cur_output_error < min_output_error:
+					min_output_error = cur_output_error
+					hist_delta[i][j][k] = cur_output_error
+					hist_coded[i][j][k] = coded
+					hist_steps[i][j][k] = t
+
+				print('layer %d , kernal (%d , %d), rate %d bits, step %d, delta %f, total rate %f, output error %.10f (min error %.10f)' % (i , r , c , k , t , delta , coded , cur_output_error , hist_delta[i][j][k]))
+
+				if k == 0:
+					break
+
+			
+			file_results.write("%d %d %d %f %.10f %d\n" % (i , j , k , hist_coded[i][j][k] , hist_delta[i][j][k] , hist_steps[i][j][k]))
+
+			gc.collect()
+
+		set_variable_to_tensor(sess , vgg_weights[i] , weight_values_original)
+
+file_results.close()
 	
