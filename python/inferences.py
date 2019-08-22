@@ -9,7 +9,7 @@ sys.path.append(SLIM_PATH)
 
 ground_truth_file='imagenet_2012_validation_synset_labels_new_index.txt'
 batch_size=100
-number_validation_images=1000
+number_validation_images=100
 # directory of validation dataset. Please download ImageNet 2010 VAL dataset (totally 50,000 images).
 directory_validation_dataset='/home/wangzhe/Documents/data/ImageNet2012/val/'
 
@@ -24,7 +24,7 @@ def load_ground_truth_from_file(filename):
 	return ground_truth
 
 
-def run_inference_VGG16(sess, input_string, probabilities):
+def run_inference_VGG16(sess, input_string, probabilities, number_validation_images=100):
 
 	ground_truth = load_ground_truth_from_file(ground_truth_file)
 	
@@ -53,4 +53,86 @@ def run_inference_VGG16(sess, input_string, probabilities):
 
 		print('Process inference on [%d / %d] validation images at ImageNet.' % (id_end_image , number_validation_images))
 
+	return 100.0*top_1_accuracy/np.float(id_end_image-1), 100.0*top_5_accuracy/np.float(id_end_image-1)
+
+def run_inference_VGG16_mini_batch(sess, input_string, probabilities, number_validation_images=100):
+	ground_truth = load_ground_truth_from_file(ground_truth_file)
+	
+	top_1_accuracy = 0 
+	top_5_accuracy = 0 
+
+	for id_batch in range(int(np.ceil(number_validation_images/np.float(batch_size)))):
+		id_start_image = id_batch * batch_size + 1
+		id_end_image = np.minimum(number_validation_images + 1, id_start_image+batch_size)
+
+		imgs_path = []
+
+		for i in range(id_start_image, id_end_image, 1): 
+			img_path = directory_validation_dataset + 'ILSVRC2012_val_%08d.JPEG' % (i)
+			imgs_path.append(img_path)
+
+		prediction_score = sess.run(probabilities, feed_dict={input_string:imgs_path})
+
+		for i in range(id_start_image, id_end_image, 1):
+			labels_ranked = np.argsort(prediction_score[i][:])[::-1]
+
+			if labels_ranked[0] == ground_truth[i-1]:
+				top_1_accuracy += 1
+
+			for j in range(5):
+				if labels_ranked[j] == ground_truth[i-1]:
+					top_5_accuracy += 1
+
+		print('Process inference on [%d / %d] validation images at ImageNet.' % (id_end_image , number_validation_images))
+
 	return 100*top_1_accuracy/np.float(id_end_image-1), 100*top_5_accuracy/np.float(id_end_image-1)
+
+
+def run_inference_VGG16_last_layer_output(sess, input_string, logits, number_validation_images=100):
+
+	ground_truth = load_ground_truth_from_file(ground_truth_file)
+	
+	top_1_accuracy = 0 
+	top_5_accuracy = 0 
+
+	last_layer_outputs = [0] * number_validation_images
+
+	for id_batch in range(int(np.ceil(number_validation_images/np.float(batch_size)))):
+
+		id_start_image = id_batch * batch_size + 1
+		id_end_image = np.minimum(number_validation_images + 1, id_start_image+batch_size)
+
+		for i in range(id_start_image, id_end_image, 1): 
+
+			img_path = directory_validation_dataset + 'ILSVRC2012_val_%08d.JPEG' % (i)
+
+			
+			output = sess.run(logits, feed_dict={input_string:img_path})
+
+			last_layer_outputs[i - 1] = output
+
+	return last_layer_outputs
+
+
+def run_inference_VGG16_last_layer_output_mini_batch(sess, input_string, logits, number_validation_images=100):
+	ground_truth = load_ground_truth_from_file(ground_truth_file)
+	top_1_accuracy = 0 
+	top_5_accuracy = 0 
+
+	last_layer_outputs = [0] * number_validation_images
+
+	for id_batch in range(int(np.ceil(number_validation_images/np.float(batch_size)))):
+		id_start_image = id_batch * batch_size + 1
+		id_end_image = np.minimum(number_validation_images + 1, id_start_image+batch_size)
+
+		imgs_path = []
+
+		for i in range(id_start_image, id_end_image, 1): 
+			img_path = directory_validation_dataset + 'ILSVRC2012_val_%08d.JPEG' % (i)
+			imgs_path.append(img_path)
+
+		output = sess.run(logits, feed_dict={input_string:imgs_path})
+		for i in range(id_start_image, id_end_image, 1):			
+			last_layer_outputs[i - 1] = output[i - 1]
+
+	return last_layer_outputs
