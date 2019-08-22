@@ -24,6 +24,10 @@ import os
 def set_variable_to_tensor(sess, tensor, value):
     return sess.run(tf.assign(tensor, value))
 
+# command line parameters
+# python vgg16_accuracy_at_rates_imagenet.py A B
+# A: which GPU to run; B: average_bit_rate * 10
+# e.g., python vgg16_accuracy_at_rates_imagenet.py 3 45 -> run codes using GPU3 at average rate 4.5 bits
 
 # define which GPU is to be run 
 gpu_id = sys.argv[1]
@@ -42,7 +46,7 @@ checkpoint_file = './vgg_16.ckpt'
 
 # define quantization hyper-parameters
 num_conv_layers = 13
-max_rates = 17
+max_rates = 11
 INF = 1000000000
 total_num_weights = 0
 num_tesing_images = 1000
@@ -90,7 +94,7 @@ for i in range(num_conv_layers):
 	hist_steps[i] = np.zeros((fh * fw , max_rates))
 	hist_filter_dims[i] = fh * fw
 
-	file_in = open('RD_curves_layer_%d' % (i) , "r")
+	file_in = open('results_RD_curves_VGG_16/RD_curves_layer_%d' % (i) , "r")
 
 	lines = file_in.readlines()
 
@@ -116,9 +120,9 @@ for i in range(num_conv_layers):
 total_rate = 1.0 * ave_compressed_rate / 10.0 * total_num_weights
 bit_allocations = pareto_condition_optimization(num_conv_layers , hist_filter_dims , total_rate , max_rates , hist_coded , hist_delta)
 
-#for i in range(num_conv_layers):
-#	for j in range(hist_filter_dims[i]):
-#		print('bit allocation layer %d dim %d bits %d' % (i , j  , bit_allocations[i][j]))
+for i in range(num_conv_layers):
+	for j in range(hist_filter_dims[i]):
+		print('bit allocation layer %d dim %d bits %d' % (i , j  , bit_allocations[i][j]))
 
 # run inference of quantized network on ImageNet
 for i in range(num_conv_layers):
@@ -135,14 +139,20 @@ for i in range(num_conv_layers):
 
 		allocated_bits = int(bit_allocations[i][j])
 		num_step = hist_steps[i][j][allocated_bits]
-		delta = offset + 0.5 * num_step
-
+		#delta = offset + 0.5 * num_step
+		delta = offset + 0.05 * num_step - 2.0
 		quantized_weights[r,c,:,:] = quantize(quantized_weights[r,c,:,:] , np.power(2 , delta) , allocated_bits)
 
 	quantized_weights = np.real(idft2(quantized_weights))
 	set_variable_to_tensor(sess , vgg_weights[i] , quantized_weights)
 
 top_1, top_5 = run_inference_VGG16(sess, input_string, probabilities, number_validation_images=num_tesing_images)
+
+file_results = open("accuracy_vgg16.txt", "a+")
+
+file_results.write("%d %f %f\n" % (ave_compressed_rate , top_1 , top_5))
+
+file_results.close()
 
 print('top1 %f top5 %f' % (top_1 , top_5))
 	
