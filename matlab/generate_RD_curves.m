@@ -1,4 +1,4 @@
-function comp_slope(archname,tranname,testsize,inlayers,outlayer)
+function generate_RD_curves(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
