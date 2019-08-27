@@ -7,5 +7,5 @@ function xhat = quantize(x,delta,B)
         maxpoint = 0;
     end
 
-    xhat = min(maxpoint,max(minpoint,delta*(floor(x/delta+0.5))));
+    xhat = min(maxpoint,max(minpoint,delta*floor(x/delta + 0.5)));
 end
