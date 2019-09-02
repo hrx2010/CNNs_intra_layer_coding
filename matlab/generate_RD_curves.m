@@ -34,9 +34,9 @@ layers = neural.Layers(l_kernel);
 for l = inlayers
     layer = layers(l);
     X = getx(neural,nclass,images,layer.Name);
-    K = getbasis(layer.Weights,X,tranname);
+    K = gettrans(layer.Weights,X,tranname);
     [h,w,p,q] = size(layer.Weights);
-    layer.Weights = forward_trans(layer.Weights,K);
+    layer.Weights = transform(layer.Weights,K{1});
     hist_delta{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
     hist_coded{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
     hist_W_sse{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
@@ -59,7 +59,7 @@ for l = inlayers
                 quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
                 coded = B*(p*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
-                quant.Weights = inverse_trans(quant.Weights,K);
+                quant.Weights = transform(quant.Weights,K{2});
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
