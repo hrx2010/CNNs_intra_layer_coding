@@ -1,8 +1,8 @@
 function T = gettrans(H,X,tranname)
     T = cell(2,1);
-    [h,w,p,q] = size(H);
     switch tranname
       case 'klt2'
+        [h,w,p,q] = size(H);
         covX = blktoeplitz(autocorr3(X,h,w));
         invcovX = inv(covX);
         covH = cov(reshape(H,[h*w,p*q])');
@@ -10,11 +10,11 @@ function T = gettrans(H,X,tranname)
         T{1} = inv(K);
         T{2} = K;
       case 'dct2'
-        T{1} = @(x) dct2(x,2-mod(h,2));
-        T{2} = @(x) idct2(x,2-mod(h,2));
+        T{1} = @dct2;
+        T{2} = @idct2;
       case 'dst2'
-        T{1} = @(x) dst2(x,2-mod(h,2));
-        T{2} = @(x) idst2(x,2-mod(h,2));
+        T{1} = @dst2;
+        T{2} = @idst2;
       case 'dft2'
         T{1} = @dft2;
         T{2} = @idft2;

@@ -46,18 +46,22 @@ def idft2(x):
 
 def dst2(x):
 	x = np.array(x)
-	return fftpack.dst(fftpack.dst(x,axis=0,type=1,norm='ortho'),axis=1,type=1,norm='ortho')
+	types = 2 - np.mod(x.shape,2);
+	return fftpack.dst(fftpack.dst(x,axis=0,type=types[0],norm='ortho'),axis=1,type=types[1],norm='ortho')
 
 def idst2(x):
 	x = np.array(x)
-	return fftpack.idst(fftpack.idst(x,axis=1,type=1,norm='ortho'),axis=0,type=1,norm='ortho')
+	types = 2 - np.mod(x.shape,2);
+	return fftpack.idst(fftpack.idst(x,axis=1,type=types[1],norm='ortho'),axis=0,type=types[0],norm='ortho')
 
 def dct2(x):
 	x = np.array(x)
-	return fftpack.dct(fftpack.dct(x,axis=0,type=1,norm='ortho'),axis=1,type=1,norm='ortho')
+	types = 2 - np.mod(x.shape,2);
+	return fftpack.dct(fftpack.dct(x,axis=0,type=types[0],norm='ortho'),axis=1,type=types[1],norm='ortho')
 
 def idct2(x):
 	x = np.array(x)
-	return fftpack.idct(fftpack.idct(x,axis=1,type=1,norm='ortho'),axis=0,type=1,norm='ortho')
+	types = 2 - np.mod(x.shape,2);
+	return fftpack.idct(fftpack.idct(x,axis=1,type=types[1],norm='ortho'),axis=0,type=types[0],norm='ortho')
 
 transforms = {'dct2' : [dct2,idct2], 'dst2' : [dst2,idst2], 'dft2': [dft2,idft2]};
