@@ -1,8 +1,8 @@
-function x = transform(x,K)
-    switch class(K)
+function x = transform(x,T)
+    switch class(T)
       case 'function_handle'
-        x = K(x);
+        x = T(x);
       otherwise
-        x = reshape(K*reshape(x,size(K,1),[]),size(x));
+        x = reshape(T*reshape(x,size(T,1),[]),size(x));
     end
 end

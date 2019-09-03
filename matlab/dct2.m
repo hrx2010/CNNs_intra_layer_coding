@@ -1,3 +1,3 @@
-function x = dct2(x)
-    x = dct(dct(x,[],1,'Type',1),[],2,'Type',1);
+function x = dct2(x,type)
+    x = dct(dct(x,[],1,'Type',type),[],2,'Type',type);
 end
