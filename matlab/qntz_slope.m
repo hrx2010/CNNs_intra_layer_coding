@@ -10,7 +10,7 @@ labeldir = './ILSVRC2012_val.txt';
 % tranname = 'dft2';
 % testsize = 1024;
 maxsteps = 96;
-load(sprintf('%s_%s_val_%d_%s',archname,tranname,testsize,outlayer));
+load(sprintf('%s_%s_val_250_%s',archname,tranname,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
@@ -26,10 +26,11 @@ pred_sum_Y_sse = zeros(maxsteps,1,testsize)*NaN;
 hist_sum_coded = zeros(maxsteps,1)*NaN;
 hist_sum_W_sse = zeros(maxsteps,1)*NaN;
 
-Y = pred(neural,nclass,images,outlayer);
+[Y,Y_cats] = pred(neural,nclass,images,outlayer);
+disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 for j = 1:maxsteps
-    slope = -32 + 0.50*(j-1);
+    slope = -48 + 0.50*(j-1);
     ydist = cell(l_length,1);
     coded = cell(l_length,1);
     delta = cell(l_length,1);
@@ -38,7 +39,8 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        quants(l).Weights = trans{1}(quants(l).Weights);
+        K = gettrans([],[],tranname);
+        quants(l).Weights = transform(quants(l).Weights,K{1});
         [h,w,p,q] = size(quants(l).Weights);
 
         [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
@@ -52,7 +54,7 @@ for j = 1:maxsteps
             quants(l).Weights(r,c,:) = quantize(quants(l).Weights(r,c,:),2^delta{l}(i),coded{l}(i)/(p*q));
             %assert(qentropy(quants(l).Weights(r,c,:))*(p*q) == coded{l}(i));
         end
-        quants(l).Weights = trans{2}(quants(l).Weights);
+        quants(l).Weights = transform(quants(l).Weights,K{2});
         wdist{l} = double(sum(reshape(quants(l).Weights - neural.Layers(l_kernel(l)).Weights,h*w,[]).^2,2));
     end
     ournet = replaceLayers(neural,quants);
