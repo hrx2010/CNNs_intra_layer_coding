@@ -33,8 +33,7 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 layers = neural.Layers(l_kernel);
 for l = inlayers
     layer = layers(l);
-    X = getx(neural,nclass,images,layer.Name);
-    K = gettrans(layer.Weights,X,tranname);
+    K = gettrans(tranname,archname,l);
     [h,w,p,q] = size(layer.Weights);
     layer.Weights = transform(layer.Weights,K{1});
     hist_delta{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;

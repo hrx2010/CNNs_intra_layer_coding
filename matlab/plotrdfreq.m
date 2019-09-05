@@ -1,11 +1,11 @@
 clear all;
 close all;
 
-archname = 'alexnet';
-testsize = 1024;
+archname = 'vgg16';
+testsize = 1000;
 outlayer = 'output';
-inlayers = 1:5;
-trans = {'idt2','idt2_base','dct2','dst2'};
+inlayers = 1:13;
+trans = {'dct2','dst2'};
 
 X = cell(length(trans),1);
 Y = cell(length(trans),1);

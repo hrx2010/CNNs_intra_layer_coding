@@ -1,14 +1,10 @@
-function T = gettrans(H,X,tranname)
+function T = gettrans(tranname,archname,layernum)
     T = cell(2,1);
     switch tranname
       case 'klt2'
-        [h,w,p,q] = size(H);
-        covX = blktoeplitz(autocorr3(X,h,w));
-        invcovX = inv(covX);
-        covH = cov(reshape(H,[h*w,p*q])');
-        K = eig(covH,(invcovX+invcovX')/2);
-        T{1} = inv(K);
-        T{2} = K;
+        load(sprintf('%s_%s',archname,tranname),'K');
+        T{1} = K{layernum,1};
+        T{2} = K{layernum,2};
       case 'dct2'
         T{1} = @dct2;
         T{2} = @idct2;
