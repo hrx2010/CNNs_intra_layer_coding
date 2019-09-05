@@ -20,7 +20,10 @@ function K = generate_KL_basis(archname,testsize)
         covX = blktoeplitz(autocorr3(X,h,w));
         invcovX = inv(covX);
         covH = cov(reshape(layer.Weights,[h*w,p*q])');
-        K{l,1} = eig(covH,(invcovX+invcovX')/2);
-        K{l,2} = inv(K{l,1});
+        [V,~] = eig(covH,(invcovX+invcovX')/2);
+        K{l,2} = V;
+        K{l,1} = inv(V);
+        disp(sprintf('%s klt2 | generating transform for layer %03d', archname, l));
     end
+    save(sprintf('%s_%s',archname,'klt2'),'K');
 end
