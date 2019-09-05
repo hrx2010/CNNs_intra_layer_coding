@@ -7,15 +7,14 @@ function qntz_slope(archname,tranname,testsize,inlayers,outlayer)
 % archname = 'alexnet';
 imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
-% tranname = 'dft2';
-% testsize = 1024;
+
 maxsteps = 96;
+
 load(sprintf('%s_%s_val_250_%s',archname,tranname,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
-trans = {str2func(tranname), str2func(['i',tranname])};
 
 l_kernel = findconv(neural.Layers); % or specify the layer number directly
 l_length = length(l_kernel);
@@ -39,7 +38,7 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        K = gettrans([],[],tranname);
+        K = gettrans(tranname,archname,l);
         quants(l).Weights = transform(quants(l).Weights,K{1});
         [h,w,p,q] = size(quants(l).Weights);
 

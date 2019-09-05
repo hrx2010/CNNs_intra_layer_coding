@@ -33,8 +33,7 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 layers = neural.Layers(l_kernel);
 for l = inlayers
     layer = layers(l);
-    X = getx(neural,nclass,images,layer.Name);
-    K = gettrans(layer.Weights,X,tranname);
+    K = gettrans(tranname,archname,l);
     [h,w,p,q] = size(layer.Weights);
     layer.Weights = transform(layer.Weights,K{1});
     hist_delta{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
@@ -47,7 +46,7 @@ for l = inlayers
 
         scale = floor(log2(sqrt(mean(layer.Weights(:).^2))));
         coded = Inf;
-        offset = scale + 0;
+        offset = scale + 2;
         for k = 1:maxrates %number of bits
             B = k - 1;
             last_Y_sse = Inf;
@@ -63,9 +62,9 @@ for l = inlayers
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
-                hist_Y_sse{l}(k,j,:,:) = repmat(mean((Y_hats - Y).^2),[h*w,1]);
+                hist_Y_sse{l}(k,j,:,:) = repmat(mean((Y_hats - Y).^2)*(1/(h*w)),[h*w,1]);
                 hist_Y_top{l}(k,j,:,:) = repmat((images.Labels == Y_cats)',[h*w,1]);
-                hist_W_sse{l}(k,j,:,1) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
+                hist_W_sse{l}(k,j,:,1) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2)*(1/(h*w));
                 hist_delta{l}(k,j,:,1) = delta;
                 hist_coded{l}(k,j,:,1) = coded;
                 mean_Y_sse = mean(hist_Y_sse{l}(k,j,i,:));

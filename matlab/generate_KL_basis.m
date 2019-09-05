@@ -23,7 +23,7 @@ function K = generate_KL_basis(archname,testsize)
         [V,~] = eig(covH,(invcovX+invcovX')/2);
         K{l,2} = V;
         K{l,1} = inv(V);
-        disp(sprintf('%s klt2 | generating transform for layer %03d', archname, l));
+        disp(sprintf('%s klt2 | generated transform for layer %03d', archname, l));
     end
     save(sprintf('%s_%s',archname,'klt2'),'K');
 end
