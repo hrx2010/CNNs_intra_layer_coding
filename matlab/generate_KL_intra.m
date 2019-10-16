@@ -1,4 +1,23 @@
 function K = generate_KL_intra(archname,testsize,klttype,dimtype)
+%GENERATE_KL_INTRA Generate KL transform for intra-kernel coding.
+%   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE,DIMTYPE)
+%   generates the Karhunen-Loeve transform K for neural network
+%   architecture ARCHNAME based on TESTSIZE-many images. KLTTYPE
+%   can be set to either 'kklt' (default) or 'klt' (not
+%   recommended). DIMTYPE can be set to either 1 (separable,
+%   default) or 2 (non-separable). 
+%
+%   Examples:
+%   >>  K = generate_KL_intra('alexnet',1000,'kklt',2);
+%   produces a non-separable KKLT basis for alexnet using 1000 test
+%   images. 
+%
+%   >>  K = generate_KL_intra('vgg16',2000,'kklt',1);
+%   produces a separable KKLT basis for vgg16 using 2000 test
+%   images. 
+      
+
+    
     if nargin < 3
         klttype = 'kklt';
     end
