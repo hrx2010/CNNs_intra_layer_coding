@@ -49,14 +49,14 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
         % find two KLTs, each using the EVD
         for k = 1:g
             for j = 1:p
-                covH = covariances(layer.Weights(:,:,j,:,k),dimtype);
+                covH = covariances(double(layer.Weights(:,:,j,:,k)),dimtype);
                 switch klttype
                   case 'kklt'
-                    covX = correlation(X(:,:,(k-1)*p+j,:),dimtype,h);
+                    covX = correlation(double(X(:,:,(k-1)*p+j,:)),dimtype,h);
                   case 'klt'
                     covX = eye(h*h);
                 end
-                invcovX = inv(0.5*(covX+covX'));
+                invcovX = inv(covX+covX');
                 [V,~] = eig(covH+covH',invcovX+invcovX');
                 K{l}{j,k} = V';
             end        

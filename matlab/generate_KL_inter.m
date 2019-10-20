@@ -44,11 +44,11 @@ function K = generate_KL_inter(archname,testsize,klttype)
         X = X - mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
 
         for k = 1:g
-            covH = cov(reshape(permute(layer.Weights(:,:,:,:,k),[3,1,2,4]),p,[])',1);
+            covH = cov(reshape(permute(double(layer.Weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
             % find two KLTs, each using the EVD
             switch klttype
               case 'kklt'
-                covX = cov(reshape(permute(X(:,:,(k-1)*p+(1:p),:),[3,1,2,4]),p,[])',1);
+                covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
               case 'klt'
                 covX = eye(p);
             end
