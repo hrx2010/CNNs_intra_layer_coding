@@ -1,5 +1,5 @@
 function K = generate_KL_intra(archname,testsize,klttype,dimtype)
-%GENERATE_KL_INTRA Generate KL transform for intra-kernel coding.
+%GENERATE_KL_INTER Generate KL transform for inter-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE,DIMTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
 %   architecture ARCHNAME based on TESTSIZE-many images. KLTTYPE

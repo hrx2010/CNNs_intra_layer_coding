@@ -17,7 +17,7 @@ neural = assembleNetwork(layers);
 l_kernel = findconv(neural.Layers);
 l_length = length(l_kernel);
 
-trannames = {'idt2','dst2','dct2','klt2','kklt'};
+trannames = {'idt2','klt_inter'};
 t_length = length(trannames);
 
 gains = zeros(l_length,t_length,2);
@@ -30,12 +30,12 @@ for l = 1:l_length
      H = layer.Weights;
 
      for t = 1:length(trannames)
-         varX = zeros(h,w,p*g);
-         varH = zeros(h,w,p*g);
+         varX = zeros(p,g);
+         varH = zeros(p,g);
          for k = 1:g
-             trans = gettrans([trannames{t},'_inter'],archname,l,1,k);
-             varX(:,k) = mean(abs(transform(reshape(permute(X(:,:,(k-1)*p+(1:p),:),[3,1,2,4]),p,[]),trans{3})).^2,2);
-             varH(:,k) = mean(abs(transform(reshape(permute(H(:,:,:,:,k),[3,1,2,4]),p,[]),trans{1})).^2,2);
+             T = gettrans(trannames{t},archname,l,1,k);
+             varH(:,k) = mean(abs(transform(reshape(permute(H(:,:,:,:,k),[3,1,2,4]),p,[]),T{1})).^2,2);
+             varX(:,k) = mean(abs(transform(reshape(permute(X(:,:,(k-1)*p+(1:p),:),[3,1,2,4]),p,[]),T{3})).^2,2);
          end
          gains(l,t,1) = geomean(varX(:));
          gains(l,t,2) = geomean(varH(:));
