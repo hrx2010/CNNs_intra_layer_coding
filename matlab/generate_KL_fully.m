@@ -52,6 +52,11 @@ function K = generate_KL_fully(archname,testsize,klttype)
             covX = eye(p);
         end
         [V,D] = eig(covX*covH);
+        [d,I] = sort(diag(D));
+        V = V(:,I);
+        D = diag(d);
+
+        
         K{l}{1} = V';
 
         disp(sprintf('%s %s | generated transform for layer %03d', archname, klttype, l));
