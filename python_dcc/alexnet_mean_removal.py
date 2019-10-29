@@ -30,24 +30,20 @@ def get_channel_mean(x):
     x_dims = x.get_shape()
     x_height = x_dims[1]
     x_width = x_dims[2]
-    #print('11111')
-    #print(x_dims)
-    #print('height %d width %d' % (x_height , x_width))
-    #print('22222')
+   
     x_reduced_mean = tf.reduce_mean(x , [0,1,2])
     
     x_repeat_mean = tf.expand_dims(x_reduced_mean , 0)
     x_repeat_mean = tf.expand_dims(x_repeat_mean , 0)
     x_repeat_mean = tf.expand_dims(x_repeat_mean , 0)
 
-    #print(x_repeat_mean.get_shape())
-    #print('33333')
     x_repeat_mean = tf.tile(x_repeat_mean , [1 , x_height , x_width , 1])
 
     return x_repeat_mean
 
 def convLayer(x, kHeight, kWidth, strideX, strideY,
-              featureNum, name, padding = "SAME", groups = 1):
+              featureNum, name, padding = "SAME", groups = 1 , 
+              per_channel_means , convolved_per_channel_means):
     """convolution"""
     channel = int(x.get_shape()[-1])
     conv = lambda a, b: tf.nn.conv2d(a, b, strides = [1, strideY, strideX, 1], padding = padding)
@@ -57,16 +53,15 @@ def convLayer(x, kHeight, kWidth, strideX, strideY,
 
         xNew = tf.split(value = x, num_or_size_splits = groups, axis = 3)
         wNew = tf.split(value = w, num_or_size_splits = groups, axis = 3)
-
+		per_channel_means_New = tf.split(value = per_channel_means, num_or_size_splits = groups, axis = 3)
+		convolved_per_channel_means_New = tf.split(value = convolved_per_channel_means, num_or_size_splits = groups, axis = 3)
         #featureMap = [conv(t1, t2) for t1, t2 in zip(xNew, wNew)]
 
         featureMap = []
-        for t1, t2 in zip(xNew, wNew):
-            xNew_mean = get_channel_mean(t1)
-            xNew_mean_removed = t1 - xNew_mean
-            y1 = conv(xNew_mean , t2)
-            y2 = conv(xNew_mean_removed , t2)
-            featureMap.append(y1 + y2)
+        for t1, t2, t3, t4 in zip(xNew , wNew , per_channel_means_New , convolved_per_channel_means_New):
+            xNew_mean_removed = t1 - t3
+            y = conv(xNew_mean_removed , t2)
+            featureMap.append(y + t4)
 
         mergeFeatureMap = tf.concat(axis = 3, values = featureMap)
         
@@ -75,13 +70,15 @@ def convLayer(x, kHeight, kWidth, strideX, strideY,
 
 class alexnet_mean_removal(object):
     """alexNet model"""
-    def __init__(self, x, keepPro, classNum, skip, modelPath = "bvlc_alexnet.npy"):
+    def __init__(self, x, keepPro, classNum, skip, modelPath = "bvlc_alexnet.npy" , per_channel_means_all , convolved_per_channel_means_all):
         self.X = x
         self.KEEPPRO = keepPro
         self.CLASSNUM = classNum
         self.SKIP = skip
         self.MODELPATH = modelPath
         self.buildCNN()
+        self.PER_CHANNEL_MEANS_ALL = per_channel_means_all
+        self.CONVOLVED_PER_CHANNEL_MEANS_ALL = convolved_per_channel_means_all
 
     def buildCNN(self):
         """build model"""
