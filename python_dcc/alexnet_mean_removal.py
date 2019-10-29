@@ -82,19 +82,19 @@ class alexnet_mean_removal(object):
 
     def buildCNN(self):
         """build model"""
-        conv1 = convLayer(self.X, 11, 11, 4, 4, 96, "conv1", "VALID")
+        conv1 = convLayer(self.X, 11, 11, 4, 4, 96, "conv1", "VALID", self.PER_CHANNEL_MEANS_ALL[0], self.CONVOLVED_PER_CHANNEL_MEANS_ALL[0])
         lrn1 = LRN(conv1, 2, 2e-05, 0.75, "norm1")
         pool1 = maxPoolLayer(lrn1, 3, 3, 2, 2, "pool1", "VALID")
 
-        conv2 = convLayer(pool1, 5, 5, 1, 1, 256, "conv2", groups = 2)
+        conv2 = convLayer(pool1, 5, 5, 1, 1, 256, "conv2", groups = 2, self.PER_CHANNEL_MEANS_ALL[1], self.CONVOLVED_PER_CHANNEL_MEANS_ALL[1])
         lrn2 = LRN(conv2, 2, 2e-05, 0.75, "lrn2")
         pool2 = maxPoolLayer(lrn2, 3, 3, 2, 2, "pool2", "VALID")
 
-        conv3 = convLayer(pool2, 3, 3, 1, 1, 384, "conv3")
+        conv3 = convLayer(pool2, 3, 3, 1, 1, 384, "conv3", self.PER_CHANNEL_MEANS_ALL[2], self.CONVOLVED_PER_CHANNEL_MEANS_ALL[2])
 
-        conv4 = convLayer(conv3, 3, 3, 1, 1, 384, "conv4", groups = 2)
+        conv4 = convLayer(conv3, 3, 3, 1, 1, 384, "conv4", groups = 2, self.PER_CHANNEL_MEANS_ALL[3], self.CONVOLVED_PER_CHANNEL_MEANS_ALL[3])
 
-        conv5 = convLayer(conv4, 3, 3, 1, 1, 256, "conv5", groups = 2)
+        conv5 = convLayer(conv4, 3, 3, 1, 1, 256, "conv5", groups = 2, self.PER_CHANNEL_MEANS_ALL[4], self.CONVOLVED_PER_CHANNEL_MEANS_ALL[4])
         pool5 = maxPoolLayer(conv5, 3, 3, 2, 2, "pool5", "VALID")
 
         fcIn = tf.reshape(pool5, [-1, 256 * 6 * 6])
