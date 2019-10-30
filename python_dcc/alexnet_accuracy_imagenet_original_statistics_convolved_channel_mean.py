@@ -17,6 +17,7 @@ from inferences import *
 from quantization_methods import *
 from transform_methods import *
 from pareto_condition_optimization import *
+from alexnet_statistics_convolved_channel_mean import *
 
 import os
 import gc
@@ -29,24 +30,8 @@ import gc
 # e.g., python generate_RD_curves_vgg16.py 3 1 5 -> run GPU3 to do the statistics for the 5th kernal in layer 1.
 
 
-# define which GPU is to be run 
-gpu_id = sys.argv[1]
-os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
-
-
-# define the average rate of compressed network
-ave_compressed_rate = int(sys.argv[2])
-
-
 def set_variable_to_tensor(sess, tensor, value):
     return sess.run(tf.assign(tensor, value))
-
-
-#create folder of results
-path_results = './results_RD_curves_alexnet_dft2' 
-if not os.path.exists(path_results):
-    os.makedirs(path_results)
-
 
 # the directory of sample images.
 SAMPLES_PATH = './samples/' 
@@ -75,14 +60,22 @@ hist_filter_dims = [0] * num_conv_layers
 INF = 1000000000
 
 
+per_channel_means = [0] * num_conv_layers
+for i in range(num_conv_layers):
+	per_channel_means[i] = np.load('./results_statistics_mean_removal/per_channel_means_%d.npy' % (i))
+
 # define alex model
 dropoutPro = 1
 classNum = 1000
 skip = []
 x = tf.placeholder("float", [1, 227, 227, 3]) 
-alexnet_model = alexnet_statistics.alexNet_statistics(x, dropoutPro, classNum, skip)
+alexnet_model = alexnet_statistics_convolved_channel_mean(x, dropoutPro, classNum, skip, per_channel_means_all = per_channel_means)
 output_before_softmax = alexnet_model.fc3
 scores = tf.nn.softmax(output_before_softmax)
+
+#conv_inputs = [alexnet_model.CONV_INPUT_1 , alexnet_model.CONV_INPUT_2 , alexnet_model.CONV_INPUT_3 , alexnet_model.CONV_INPUT_4 , alexnet_model.CONV_INPUT_5]
+convolved_channel_means = alexnet_model.CONVOLVED_PER_CHANNEL_MEANS
+
 
 # load alex model
 #with tf.Session() as sess:
@@ -93,13 +86,13 @@ sess.run(tf.global_variables_initializer())
 alexnet_model.loadModel(sess)
 
 
-# top_1, top_5 = run_inference_alexnet_statistics(sess, x, conv_inputs, conv_outputs, scores, number_validation_images=num_tesing_images) 
+top_1, top_5 = run_inference_alexnet_statistics_convolved_channel_means(sess, x, scores, convolved_channel_means, number_validation_images=num_tesing_images) 
 
-top_1, top_5 = run_inference_alexnet(sess, x, scores, number_validation_images=num_tesing_images) 
+# top_1, top_5 = run_inference_alexnet(sess, x, scores, number_validation_images=num_tesing_images) 
 
 file_results = open("accuracy_alexnet_original.txt", "a+")
 
-file_results.write("%d %f %f\n" % (ave_compressed_rate , top_1 , top_5))
+file_results.write("%f %f\n" % (top_1 , top_5))
 
 file_results.close()
 

@@ -53,7 +53,7 @@ def set_variable_to_tensor(sess, tensor, value):
 
 
 #create folder of results
-path_results = ('./results_RD_curves_alexnet_%s' % (transform_method)) 
+path_results = ('./results_RD_curves_alexnet_mean_removal_%s' % (transform_method)) 
 if not os.path.exists(path_results):
     os.makedirs(path_results)
 
@@ -74,6 +74,15 @@ flag_inference = False
 # define_transform_method
 
 
+per_channel_means = [0] * num_conv_layers
+convolved_per_channel_means = [0] * num_conv_layers
+
+for i in range(num_conv_layers):
+	per_channel_means[i] = np.load('./results_statistics_mean_removal/per_channel_means_%d.npy' % (i))
+	convolved_per_channel_means[i] = np.load('./results_statistics_convolved_per_channel_mean/convolved_per_channel_means_%d.npy' % (i))
+
+
+
 print('asdasdasd %d' % (len(conv_names)))
 
 # define quantization hyper-parameters
@@ -91,7 +100,7 @@ dropoutPro = 1
 classNum = 1000
 skip = []
 x = tf.placeholder("float", [1, 227, 227, 3]) 
-alexnet_model = alexnet_mean_removal(x, dropoutPro, classNum, skip)
+alexnet_model = alexnet_mean_removal(x, dropoutPro, classNum, skip, per_channel_means_all = per_channel_means, convolved_per_channel_means_all = convolved_per_channel_means)
 output_before_softmax = alexnet_model.fc3
 scores = tf.nn.softmax(output_before_softmax)
 

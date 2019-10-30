@@ -43,7 +43,7 @@ def get_channel_mean(x):
 
 def convLayer(x, kHeight, kWidth, strideX, strideY,
               featureNum, name, padding = "SAME", groups = 1 , 
-              per_channel_means = [] , convolved_per_channel_means = []):
+              per_channel_means = []):
     """convolution"""
     channel = int(x.get_shape()[-1])
     conv = lambda a, b: tf.nn.conv2d(a, b, strides = [1, strideY, strideX, 1], padding = padding)
@@ -54,48 +54,61 @@ def convLayer(x, kHeight, kWidth, strideX, strideY,
         xNew = tf.split(value = x, num_or_size_splits = groups, axis = 3)
         wNew = tf.split(value = w, num_or_size_splits = groups, axis = 3)
         per_channel_means_New = tf.split(value = per_channel_means, num_or_size_splits = groups, axis = 3)
-        convolved_per_channel_means_New = tf.split(value = convolved_per_channel_means, num_or_size_splits = groups, axis = 3)
+		#convolved_per_channel_means_New = tf.split(value = convolved_per_channel_means, num_or_size_splits = groups, axis = 3)
         #featureMap = [conv(t1, t2) for t1, t2 in zip(xNew, wNew)]
 
+        convolved_per_channel_means = []
+
         featureMap = []
-        for t1, t2, t3, t4 in zip(xNew , wNew , per_channel_means_New , convolved_per_channel_means_New):
+        for t1, t2, t3 in zip(xNew , wNew , per_channel_means_New):
             xNew_mean_removed = t1 - t3
             y = conv(xNew_mean_removed , t2)
-            featureMap.append(y + t4)
+            y1 = conv(t3 , t2)
+            featureMap.append(y + y1)
+            convolved_per_channel_means.append(y1)
 
         mergeFeatureMap = tf.concat(axis = 3, values = featureMap)
-        
-        out = tf.nn.bias_add(mergeFeatureMap, b)
-        return tf.nn.relu(tf.reshape(out, mergeFeatureMap.get_shape().as_list()), name = scope.name)
+        merged_covolved_per_channel_means = tf.concat(axis = 3, values = convolved_per_channel_means)
 
-class alexnet_mean_removal(object):
+        out = tf.nn.bias_add(mergeFeatureMap, b)
+        return tf.nn.relu(tf.reshape(out, mergeFeatureMap.get_shape().as_list()), name = scope.name), merged_covolved_per_channel_means
+
+class alexnet_statistics_convolved_channel_mean(object):
     """alexNet model"""
-    def __init__(self, x, keepPro, classNum, skip, modelPath = "bvlc_alexnet.npy" , per_channel_means_all = [], convolved_per_channel_means_all = []):
+    def __init__(self, x, keepPro, classNum, skip, modelPath = "bvlc_alexnet.npy" , per_channel_means_all = []):
         self.X = x
         self.KEEPPRO = keepPro
         self.CLASSNUM = classNum
         self.SKIP = skip
         self.MODELPATH = modelPath
+        
         self.PER_CHANNEL_MEANS_ALL = per_channel_means_all
-        self.CONVOLVED_PER_CHANNEL_MEANS_ALL = convolved_per_channel_means_all
+        self.CONVOLVED_PER_CHANNEL_MEANS = []
 
         self.buildCNN()
 
     def buildCNN(self):
         """build model"""
-        conv1 = convLayer(self.X, 11, 11, 4, 4, 96, "conv1", "VALID", per_channel_means = self.PER_CHANNEL_MEANS_ALL[0], convolved_per_channel_means = self.CONVOLVED_PER_CHANNEL_MEANS_ALL[0])
+        conv1, convolved_per_channel_means_1 = convLayer(self.X, 11, 11, 4, 4, 96, "conv1", "VALID", per_channel_means = self.PER_CHANNEL_MEANS_ALL[0])
+        self.CONVOLVED_PER_CHANNEL_MEANS.append(convolved_per_channel_means_1)
+
         lrn1 = LRN(conv1, 2, 2e-05, 0.75, "norm1")
         pool1 = maxPoolLayer(lrn1, 3, 3, 2, 2, "pool1", "VALID")
 
-        conv2 = convLayer(pool1, 5, 5, 1, 1, 256, "conv2", groups = 2, per_channel_means = self.PER_CHANNEL_MEANS_ALL[1], convolved_per_channel_means = self.CONVOLVED_PER_CHANNEL_MEANS_ALL[1])
+        conv2, convolved_per_channel_means_2 = convLayer(pool1, 5, 5, 1, 1, 256, "conv2", groups = 2, per_channel_means = self.PER_CHANNEL_MEANS_ALL[1])
+        self.CONVOLVED_PER_CHANNEL_MEANS.append(convolved_per_channel_means_2)
+
         lrn2 = LRN(conv2, 2, 2e-05, 0.75, "lrn2")
         pool2 = maxPoolLayer(lrn2, 3, 3, 2, 2, "pool2", "VALID")
 
-        conv3 = convLayer(pool2, 3, 3, 1, 1, 384, "conv3", per_channel_means = self.PER_CHANNEL_MEANS_ALL[2], convolved_per_channel_means = self.CONVOLVED_PER_CHANNEL_MEANS_ALL[2])
+        conv3, convolved_per_channel_means_3 = convLayer(pool2, 3, 3, 1, 1, 384, "conv3", per_channel_means = self.PER_CHANNEL_MEANS_ALL[2])
+        self.CONVOLVED_PER_CHANNEL_MEANS.append(convolved_per_channel_means_3)
 
-        conv4 = convLayer(conv3, 3, 3, 1, 1, 384, "conv4", groups = 2, per_channel_means = self.PER_CHANNEL_MEANS_ALL[3], convolved_per_channel_means = self.CONVOLVED_PER_CHANNEL_MEANS_ALL[3])
+        conv4, convolved_per_channel_means_4 = convLayer(conv3, 3, 3, 1, 1, 384, "conv4", groups = 2, per_channel_means = self.PER_CHANNEL_MEANS_ALL[3])
+        self.CONVOLVED_PER_CHANNEL_MEANS.append(convolved_per_channel_means_4)
 
-        conv5 = convLayer(conv4, 3, 3, 1, 1, 256, "conv5", groups = 2, per_channel_means = self.PER_CHANNEL_MEANS_ALL[4], convolved_per_channel_means = self.CONVOLVED_PER_CHANNEL_MEANS_ALL[4])
+        conv5, convolved_per_channel_means_5 = convLayer(conv4, 3, 3, 1, 1, 256, "conv5", groups = 2, per_channel_means = self.PER_CHANNEL_MEANS_ALL[4])
+        self.CONVOLVED_PER_CHANNEL_MEANS.append(convolved_per_channel_means_5)
         pool5 = maxPoolLayer(conv5, 3, 3, 2, 2, "pool5", "VALID")
 
         fcIn = tf.reshape(pool5, [-1, 256 * 6 * 6])
