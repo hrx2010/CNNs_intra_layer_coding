@@ -1,4 +1,4 @@
-function T = gettrans(tranname,archname,layernum,inputnum,groupnum)
+function T = gettrans(tranname,archname,layernum)
     T = cell(2,1);
     switch tranname
       case 'dct2'
@@ -6,11 +6,21 @@ function T = gettrans(tranname,archname,layernum,inputnum,groupnum)
         T{2} = @idct2;
         T{3} = @dct2;
         T{4} = @idct2;
+      case 'dct2_2'
+        T{1} = @(x) dct2(x,[2,2]);
+        T{2} = @(x) idct2(x,[2,2]);
+        T{3} = @(x) dct2(x,[2,2]);
+        T{4} = @(x) idct2(x,[2,2]);
       case 'dst2'
         T{1} = @dst2;
         T{2} = @idst2;
         T{3} = @dst2;
         T{4} = @idst2;
+      case 'dst2_2'
+        T{1} = @(x) dst2(x,[2,2]);
+        T{2} = @(x) idst2(x,[2,2]);
+        T{3} = @(x) dst2(x,[2,2]);
+        T{4} = @(x) idst2(x,[2,2]);
       case 'dft2'
         T{1} = @dft2;
         T{2} = @idft2;
@@ -27,10 +37,10 @@ function T = gettrans(tranname,archname,layernum,inputnum,groupnum)
         T{3} = 1;
         T{4} = 1;
       otherwise
-        load(sprintf('%s_%s',archname,tranname),'K');
-        T{1} = K{layernum}{inputnum,groupnum};
-        T{2} = inv(K{layernum}{inputnum,groupnum});
-        T{3} = inv(K{layernum}{inputnum,groupnum}');
-        T{4} = K{layernum}{inputnum,groupnum}';
+        load(sprintf('%s_%s',archname,tranname),'K','invK','invKt','Kt');
+        T{1} = K{layernum};
+        T{2} = invK{layernum};
+        T{3} = invKt{layernum};
+        T{4} = Kt{layernum};
     end
 end

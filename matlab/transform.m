@@ -3,6 +3,11 @@ function x = transform(x,T)
       case 'function_handle'
         x = T(x);
       otherwise
-        x = reshape(T*reshape(x,size(T,1),[]),size(x));
+        [h,w,p,q,g] = size(x);
+        for j = 1:g
+            for i = 1:p
+                x(:,:,i,:,j) = reshape(T{i,j}*reshape(x(:,:,i,:,j),h*w,q),h,w,1,q,1);
+            end
+        end
     end
 end

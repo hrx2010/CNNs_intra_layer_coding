@@ -19,7 +19,7 @@ function K = generate_KL_inter(archname,testsize,klttype)
 
 
     if nargin < 3
-        klttype = 'kklt';
+        klttype = 'kkt';
     end
 
     imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
@@ -47,7 +47,7 @@ function K = generate_KL_inter(archname,testsize,klttype)
             covH = cov(reshape(permute(double(layer.Weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
             % find two KLTs, each using the EVD
             switch klttype
-              case 'kklt'
+              case 'kkt'
                 covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
               case 'klt'
                 covX = eye(p);

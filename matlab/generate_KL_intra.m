@@ -19,7 +19,7 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
 
     
     if nargin < 3
-        klttype = 'kklt';
+        klttype = 'kkt';
     end
     if nargin < 4
         dimtype = 1;
@@ -51,18 +51,21 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
             for j = 1:p
                 covH = covariances(double(layer.Weights(:,:,j,:,k)),dimtype);
                 switch klttype
-                  case 'kklt'
+                  case 'kkt'
                     covX = correlation(double(X(:,:,(k-1)*p+j,:)),dimtype,h);
                   case 'klt'
                     covX = eye(h*h);
                 end
                 invcovX = inv(covX+covX');
-                [V,~] = eig(covH+covH',invcovX+invcovX');
+                [V,~] = eig(covH+covH',invcovX+invcovX','chol');
                 K{l}{j,k} = V';
+                Kt{l}{j,k} = V;
+                invK{l}{j,k} = inv(V');
+                invKt{l}{j,k} = inv(V);
             end        
         end
 
         disp(sprintf('%s %s | generated %d-D transform for layer %03d', archname, klttype, dimtype, l));
     end
-    save(sprintf('%s_%s%d',archname,klttype,dimtype),'K');
+    save(sprintf('%s_%s%d',archname,klttype,dimtype),'K','Kt','invK','invKt');
 end
