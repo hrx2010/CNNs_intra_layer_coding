@@ -1,4 +1,4 @@
-function qntz_slope(archname,tranname,testsize,inlayers,outlayer)
+function generate_RD_frontier(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -10,7 +10,7 @@ labeldir = './ILSVRC2012_val.txt';
 
 maxsteps = 96;
 
-load(sprintf('%s_%s_val_250_%s',archname,tranname,outlayer));
+load(sprintf('%s_%s_val_1000_%s',archname,tranname,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 neural = assembleNetwork(layers);
