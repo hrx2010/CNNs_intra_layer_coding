@@ -18,6 +18,7 @@ from quantization_methods import *
 from transform_methods import *
 from pareto_condition_optimization import *
 
+
 import os
 import gc
 
@@ -38,12 +39,15 @@ os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
 ave_compressed_rate = int(sys.argv[2])
 
 
+transform_method = str(sys.argv[3])
+
+
 def set_variable_to_tensor(sess, tensor, value):
     return sess.run(tf.assign(tensor, value))
 
 
 #create folder of results
-path_results = './results_RD_curves_alexnet_dft2' 
+path_results = ('./results_RD_curves_alexnet_%s' % (transform_method)) 
 if not os.path.exists(path_results):
     os.makedirs(path_results)
 
@@ -62,8 +66,8 @@ checkpoint_file = './bvlc_alexnet.npy'
 # inference flag. If ture, then run inference at the end. Otherwise not.
 flag_inference = False
 # define_transform_method
-transform_method = 'dft2'
-max_rates = 11
+
+max_rates = 17
 num_tesing_images = 1000
 
 # define quantization hyper-parameters
@@ -115,7 +119,7 @@ for i in range(num_conv_layers):
 	hist_size[i] = np.zeros((fh * fw , max_rates))
 	hist_filter_dims[i] = fh * fw
 
-	file_in = open('results_RD_curves_alexnet_dft2/RD_curves_layer_%d' % (i) , "r")
+	file_in = open('results_RD_curves_alexnet_%s/RD_curves_layer_%d' % (transform_method , i) , "r")
 
 	lines = file_in.readlines()
 
@@ -156,7 +160,17 @@ for i in range(num_conv_layers):
 	weight_values_original = sess.run(node_weights)
 	[fh, fw, n_input, n_output] = weight_values_original.shape
 
-	weight_values_original_transformed = dft2(weight_values_original)
+	#weight_values_original_transformed = dft2(weight_values_original)
+
+	if transform_method == 'dft2':
+		weight_values_original_transformed = dft2(weight_values_original)
+	elif transform_method == 'dst2':
+		weight_values_original_transformed = dst2(weight_values_original)
+	elif transform_method == 'dct2':
+		weight_values_original_transformed = dct2(weight_values_original)
+	else:
+		sys.exit('no transform method found: %s' % (transform_method))
+
 	quantized_weights = np.array(weight_values_original_transformed)
 
 	for j in range(fh * fw):
@@ -172,13 +186,23 @@ for i in range(num_conv_layers):
 		delta = hist_size[i][j][allocated_bits]
 		quantized_weights[r,c,:,:] = quantize(quantized_weights[r,c,:,:] , np.power(2 , delta) , allocated_bits)
 
-	quantized_weights = np.real(idft2(quantized_weights))
+	# quantized_weights = np.real(idft2(quantized_weights))
+
+	if transform_method == 'dft2':
+		quantized_weights = np.real(idft2(quantized_weights))
+	elif transform_method == 'dst2':
+		quantized_weights = np.real(idst2(quantized_weights))
+	elif transform_method == 'dct2':
+		quantized_weights = np.real(idct2(quantized_weights))
+	else:
+		sys.exit('no transform method found: %s' % (transform_method))
+
 	sess.run(node_weights.assign(quantized_weights))
 
 
 top_1, top_5 = run_inference_alexnet(sess, x, scores, number_validation_images=num_tesing_images) 
 
-file_results = open("accuracy_alexnet_dft.txt", "a+")
+file_results = open(("accuracy_alexnet_%s.txt" % (transform_method)), "a+")
 
 file_results.write("%d %f %f\n" % (ave_compressed_rate , top_1 , top_5))
 

@@ -16,7 +16,7 @@ from tools import *
 from inferences import * 
 from quantization_methods import *
 from transform_methods import *
-from alexnet_mean_removal import *
+from alexnet import *
 
 import os
 import gc
@@ -75,7 +75,7 @@ print('asdasdasd %d' % (len(conv_names)))
 
 # define quantization hyper-parameters
 max_steps = 50
-max_rates = 11
+max_rates = 17
 hist_delta = [0] * num_conv_layers
 hist_coded = [0] * num_conv_layers
 hist_steps = [0] * num_conv_layers
@@ -88,7 +88,7 @@ dropoutPro = 1
 classNum = 1000
 skip = []
 x = tf.placeholder("float", [1, 227, 227, 3]) 
-alexnet_model = alexnet_mean_removal(x, dropoutPro, classNum, skip)
+alexnet_model = alexnet.alexNet(x, dropoutPro, classNum, skip)
 output_before_softmax = alexnet_model.fc3
 scores = tf.nn.softmax(output_before_softmax)
 
@@ -181,7 +181,6 @@ for i in range(num_conv_layers):
 					inverted_quantized_weights = np.real(idct2(quantized_weights))
 				else:
 					sys.exit('no transform method found: %s' % (transform_method))
-
 				#set_variable_to_tensor(sess , vgg_weights[i] , inverted_quantized_weights)
 				sess.run(node_weights.assign(inverted_quantized_weights))
 				last_layer_output_quantized = run_inference_alexnet_last_layer_output(sess, x, output_before_softmax)

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.fftpack as fftpack
 import scipy.io as sio
+import tensorflow as tf
 
 def fft2split(x):
 	x = np.array(x)
@@ -69,42 +70,73 @@ def load_transform_data_from_file(file_path):
 		transform_matrices = transform_data[key]
 	return transform_matrices
 
+
 def transform_given_matrices(transform_matrices , x):
-	#x = np.array(x)
+	
 	[dim1 , dim2] = transform_matrices.shape
 	[fh , fw , n_input , n_output] = x.shape
 	y = np.zeros(x.shape)
 	
-	for channel_id in range(dim1):
-		j = int(channel_id / dim1)
-		i = (channel_id % dim1)
-		#print('dim1 %d dim2 %d i %d j %d channel_id %d' % (dim1 , dim2 , i , j , channel_id))
-		#print('-- fh %d fw %d n_input %d n_output %d' % (fh , fw , n_input , n_output))
-		for k in range(n_output):
-			H = x[: , : , channel_id , k]
-			H_flatten = H.flatten()
-			W = np.dot(transform_matrices[i , j] , H_flatten)
-			W_reshaped = np.reshape(W , H.shape)
-			y[: , : , channel_id , k] = W_reshaped 
+	if dim2 == 1:
+		for i in range(n_output):
+			for j in range(n_input):
+				H = x[: , : , j , i]
+				H_vectorized = H.T.flatten()
+				W = np.dot(transform_matrices[j , 0] , H_vectorized)
+				W_reshaped = np.reshape(W , H.shape)
+				W_reshaped = W_reshaped.T
+				y[: , : , j , i] = W_reshaped
 
-	return y
+		return y
 
-def i_transform_given_matrices(transform_matrices , x):
-	#x = np.array(x)
-	[dim1 , dim2] = transform_matrices.shape
-	[fh , fw , n_input , n_output] = x.shape
-	y = np.zeros(x.shape)
-	
-	for channel_id in range(dim1):
-		j = int(channel_id / dim1)
-		i = (channel_id % dim1)
+	elif dim2 == 2:
+		half_n_output = int(n_output / 2)
 		
-		for k in range(n_output):
-			H = x[: , : , channel_id , k]
-			H_flatten = H.flatten()
-			inv_matrix = np.linalg.inv(transform_matrices[i , j])
-			W = np.dot(inv_matrix , H_flatten)
-			W_reshaped = np.reshape(W , H.shape)
-			y[: , : , channel_id , k] = W_reshaped 
+		for i in range(half_n_output):
+			for j in range(n_input):
+				H = x[: , : , j , i]
+				H_vectorized = H.T.flatten()
+				W = np.dot(transform_matrices[j , 0] , H_vectorized)
+				W_reshaped = np.reshape(W , H.shape)
+				W_reshaped = W_reshaped.T
+				y[: , : , j , i] = W_reshaped
 
-	return y
+		for i in range(half_n_output):
+			for j in range(n_input):
+				H = x[: , : , j , i + half_n_output]
+				H_vectorized = H.T.flatten()
+				W = np.dot(transform_matrices[j , 1] , H_vectorized)
+				W_reshaped = np.reshape(W , H.shape)
+				W_reshaped = W_reshaped.T
+				y[: , : , j , i + half_n_output] = W_reshaped
+
+		return y
+
+
+def i_transform_given_matrices_fast(inv_transform_matrices_reshaped , x , sess):
+	[fh , fw , n_input , n_output] = x.shape
+	x_reshaped = np.zeros((n_input * n_output , fh * fw , 1))
+
+	cnt = 0
+
+	for j in range(n_output):
+		for i in range(n_input):
+			x_reshaped[cnt , : , 0] = x[: , : , i , j].T.flatten()
+			cnt = cnt + 1
+
+	A = tf.constant(inv_transform_matrices_reshaped)
+	B = tf.constant(x_reshaped)
+	C = tf.matmul(A, B)
+
+	y = sess.run(C)
+
+	rst = np.zeros([fh , fw , n_input , n_output])
+
+	cnt = 0
+
+	for j in range(n_output):
+		for i in range(n_input):
+			rst[: , : , i , j] = np.reshape( y[cnt , : , :], (fh , fw) ).T
+			cnt = cnt + 1
+
+	return rst
