@@ -60,10 +60,11 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
                 end
                 invcovX = inv(covX+covX');
                 [V,~] = eig(covH+covH',invcovX+invcovX','chol');
-                K{l}{j,k} = V';
-                Kt{l}{j,k} = V;
-                invK{l}{j,k} = inv(V');
-                invKt{l}{j,k} = inv(V);
+                invVt = inv(V')./sqrt(sum(inv(V').^2));
+                K{l}{j,k} = inv(invVt);
+                Kt{l}{j,k} = K{l}{j,k}';
+                invK{l}{j,k} = invVt;
+                invKt{l}{j,k} = K{l}{j,k}';
             end        
         end
 
