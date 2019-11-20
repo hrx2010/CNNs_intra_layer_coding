@@ -14,6 +14,9 @@ maxrates = 17;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
+
+[cmeans,offset] = channelMeans(neural,images);
+layers = modifyConvLayers(layers,cmeans,offset);
 neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
 trans = {str2func(tranname), str2func(['i',tranname])};
