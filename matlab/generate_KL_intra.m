@@ -43,9 +43,11 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
         layer = layers(l);
         [h,w,p,q,g] = size(layer.Weights);
         K{l} = cell(p,g);
+        Kt{l} = cell(p,g);
+        invK{l} = cell(p,g);
+        invKt{l} = cell(p,g);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
         X = X - mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
-
         % find two KLTs, each using the EVD
         for k = 1:g
             for j = 1:p

@@ -22,6 +22,9 @@ function K = generate_KL_inter(archname,testsize,klttype)
         klttype = 'kkt';
     end
 
+
+
+
     imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
     labeldir = './ILSVRC2012_val.txt';
 
@@ -40,24 +43,31 @@ function K = generate_KL_inter(archname,testsize,klttype)
         layer = layers(l);
         [h,w,p,q,g] = size(layer.Weights);
         K{l} = cell(1,g);
+        Kt{l} = cell(1,g);
+        invK{l} = cell(1,g);
+        invKt{l} = cell(1,g);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
         X = X - mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
 
         for k = 1:g
-            covH = cov(reshape(permute(double(layer.Weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
-            % find two KLTs, each using the EVD
-            switch klttype
-              case 'kkt'
-                covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
-              case 'klt'
-                covX = eye(p);
+            for j = 1:1 % only one transform per group
+                covH = cov(reshape(permute(double(layer.Weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
+                switch klttype
+                  case 'kkt'
+                    covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
+                  case 'klt'
+                    covX = eye(p);
+                end
+                invcovX = inv(covX+covX');
+                [V,~] = eig(covH+covH',invcovX+invcovX','chol');
+                K{l}{1,k} = V';
+                Kt{l}{1,k} = V;
+                invK{l}{1,k} = inv(V');
+                invKt{l}{1,k} = inv(V);
             end
-            invcovX = inv(covX+covX');
-            [V,~] = eig(covH+covH',invcovX+invcovX');
-            K{l}{k} = V';
         end
 
         disp(sprintf('%s %s | generated transform for layer %03d', archname, klttype, l));
     end        
-    save(sprintf('%s_%s_inter',archname,klttype),'K');
+    save(sprintf('%s_%s_inter',archname,klttype),'K','Kt','invK','invKt');
 end
