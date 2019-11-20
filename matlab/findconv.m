@@ -9,6 +9,8 @@ function l = findconv(layers,types)
         if ismember('conv',types)
             types{end+1} = 'nnet.cnn.layer.Convolution2DLayer';
             types{end+1} = 'nnet.cnn.layer.GroupedConvolution2DLayer';
+            types{end+1} = 'nnet.cnn.layer.Convolution2DLayerCustom';
+            types{end+1} = 'nnet.cnn.layer.GroupedConvolution2DLayerCustom';
         end
     end
 
