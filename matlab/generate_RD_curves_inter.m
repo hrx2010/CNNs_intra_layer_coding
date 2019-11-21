@@ -37,17 +37,17 @@ layers = neural.Layers(l_kernel);
 for l = inlayers
     layer = layers(l);
     K = gettrans([tranname,'_inter'],archname,l);
-    [h,w,p,q] = size(layer.Weights);
+    [h,w,p,q,g] = size(layer.Weights);
     layer.Weights = transform_inter(layer.Weights,K{1});
-    hist_delta{l} = zeros(maxrates,maxsteps,1)*NaN;
-    hist_coded{l} = zeros(maxrates,maxsteps,1)*NaN;
-    hist_W_sse{l} = zeros(maxrates,maxsteps,1)*NaN;
-    hist_Y_sse{l} = zeros(maxrates,maxsteps,1)*NaN;
-    hist_Y_top{l} = zeros(maxrates,maxsteps,1)*NaN;
+    hist_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     
-    for i = 1:1 % iterate over the frequency bands
-        [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
+    for i = 1:p*g % iterate over the frequency bands
+        [r,c] = ind2sub([p,g],i);
+        scale = floor(log2(sqrt(mean(reshape(layer.Weights(:,:,r,:,c),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -58,8 +58,8 @@ for l = inlayers
                 % quantize each of the q slices
                 quant = layer;
                 delta = offset + 0.25*(j-1);
-                quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
-                coded = B*(p*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
+                quant.Weights(:,:,r,:,c) = quantize(quant.Weights(:,:,r,:,c),2^delta,B);
+                coded = B*(h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant.Weights = transform_inter(quant.Weights,K{2});
                 ournet = replaceLayers(neural,quant);
@@ -73,13 +73,13 @@ for l = inlayers
                 mean_Y_sse = hist_Y_sse{l}(k,j,i);
                 mean_W_sse = hist_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: all/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, h*w, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(p*q)));
+                             archname, tranname, l, l_length, p*g, scale, delta, mean_Y_sse, ...
+                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(h*w*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
-                    [~,j] = min(hist_Y_sse{l}(k,:));
-                    delta = hist_delta{l}(k,j);
+                    [~,j] = min(hist_Y_sse{l}(k,:,i));
+                    delta = hist_delta{l}(k,j,i);
                     offset = delta - 2;
                     break;
                 end
