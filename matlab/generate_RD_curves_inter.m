@@ -1,4 +1,4 @@
-function generate_RD_curves(archname,tranname,testsize,inlayers,outlayer)
+function generate_RD_curves_inter(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -36,16 +36,16 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 layers = neural.Layers(l_kernel);
 for l = inlayers
     layer = layers(l);
-    K = gettrans(tranname,archname,l);
+    K = gettrans([tranname,'_inter'],archname,l);
     [h,w,p,q] = size(layer.Weights);
-    layer.Weights = transform(layer.Weights,K{1});
-    hist_delta{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
-    hist_coded{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
-    hist_W_sse{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
-    hist_Y_sse{l} = zeros(maxrates,maxsteps,h*w,testsize)*NaN;
-    hist_Y_top{l} = zeros(maxrates,maxsteps,h*w,testsize)*NaN;
+    layer.Weights = transform_inter(layer.Weights,K{1});
+    hist_delta{l} = zeros(maxrates,maxsteps,1)*NaN;
+    hist_coded{l} = zeros(maxrates,maxsteps,1)*NaN;
+    hist_W_sse{l} = zeros(maxrates,maxsteps,1)*NaN;
+    hist_Y_sse{l} = zeros(maxrates,maxsteps,1)*NaN;
+    hist_Y_top{l} = zeros(maxrates,maxsteps,1)*NaN;
     
-    for i = 1:h*w % iterate over the frequency bands
+    for i = 1:1 % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
         scale = floor(log2(sqrt(mean(layer.Weights(r,c,:).^2))));
         coded = Inf;
@@ -61,25 +61,25 @@ for l = inlayers
                 quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
                 coded = B*(p*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
-                quant.Weights = transform(quant.Weights,K{2});
+                quant.Weights = transform_inter(quant.Weights,K{2});
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
-                hist_Y_sse{l}(k,j,i,:) = mean((Y_hats - Y).^2);
-                hist_Y_top{l}(k,j,i,:) = images.Labels == Y_cats;
-                hist_W_sse{l}(k,j,i,1) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
-                hist_delta{l}(k,j,i,1) = delta;
-                hist_coded{l}(k,j,i,1) = coded;
-                mean_Y_sse = mean(hist_Y_sse{l}(k,j,i,:));
-                mean_W_sse = mean(hist_W_sse{l}(k,j,i,1));
-                disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i,:)), coded/(p*q)));
+                hist_Y_sse{l}(k,j,i) = mean((Y_hats(:) - Y(:)).^2);
+                hist_Y_top{l}(k,j,i) = mean(images.Labels == Y_cats);
+                hist_W_sse{l}(k,j,i) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
+                hist_delta{l}(k,j,i) = delta;
+                hist_coded{l}(k,j,i) = coded;
+                mean_Y_sse = hist_Y_sse{l}(k,j,i);
+                mean_W_sse = hist_W_sse{l}(k,j,i);
+                disp(sprintf('%s %s | layer: %03d/%03d, band: all/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
+                             archname, tranname, l, l_length, h*w, scale, delta, mean_Y_sse, ...
+                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(p*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
-                    [~,j] = min(mean(hist_Y_sse{l}(k,:,i,:),4));
-                    delta = hist_delta{l}(k,j,i,1);
+                    [~,j] = min(hist_Y_sse{l}(k,:));
+                    delta = hist_delta{l}(k,j);
                     offset = delta - 2;
                     break;
                 end
