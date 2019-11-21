@@ -35,20 +35,18 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    layer = layers(l);
     K = gettrans([tranname,'_inter'],archname,l);
-    [h,w,p,q,g] = size(layer.Weights);
-    layer_weights = reshape(permute(transform_inter(layer.Weights,K{1}),[1,2,3,5,4]),[h,w,p*g,q]);
+    [h,w,p,q,g] = size(layers(l).Weights);
+    layer_weights = reshape(permute(transform_inter(layers(l).Weights,K{1}),[1,2,3,5,4]),[h,w,p*g,q]);
     hist_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-
     s = strides(l);
     for i = 1:s:p*g % iterate over the frequency bands
         rs = i:min(p*g,s+i-1);
-        scale = floor(log2(sqrt(mean(reshape(layer.Weights(:,:,rs,:),[],1).^2))));
+        scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -57,12 +55,13 @@ for l = inlayers
             last_W_sse = Inf;
             for j = 1:maxsteps
                 % quantize each of the q slices
-                quant = layer;
+                quant_weights = layer_weights;
                 delta = offset + 0.25*(j-1);
-                quant.Weights(:,:,rs,:) = quantize(quant.Weights(:,:,rs,:),2^delta,B);
+                quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta,B);
                 coded = B*(h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
-                quant.Weights = transform_inter(permute(reshape(quant.Weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
+                quant = layers(l);
+                quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);

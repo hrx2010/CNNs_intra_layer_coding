@@ -35,10 +35,9 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    layer = layers(l);
     K = gettrans(tranname,archname,l);
-    [h,w,p,q] = size(layer.Weights);
-    layer.Weights = transform(layer.Weights,K{1});
+    [h,w,p,q] = size(layers(l).Weights);
+    layer_weights = transform(layer(l).Weights,K{1});
     hist_delta{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
     hist_coded{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
     hist_W_sse{l} = zeros(maxrates,maxsteps,h*w,1)*NaN;
@@ -47,7 +46,7 @@ for l = inlayers
     
     for i = 1:h*w % iterate over the frequency bands
         [r,c] = ind2sub([h,w],i);
-        scale = floor(log2(sqrt(mean(reshape(layer.Weights(r,c,:),[],1).^2))));
+        scale = floor(log2(sqrt(mean(reshape(layer_weights(r,c,:),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -56,12 +55,13 @@ for l = inlayers
             last_W_sse = Inf;
             for j = 1:maxsteps
                 % quantize each of the q slices
-                quant = layer;
+                quant_weights = layer_weights;
                 delta = offset + 0.25*(j-1);
-                quant.Weights(r,c,:) = quantize(quant.Weights(r,c,:),2^delta,B);
+                quant_weights(r,c,:) = quantize(quant_weights(r,c,:),2^delta,B);
                 coded = B*(p*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
-                quant.Weights = transform(quant.Weights,K{2});
+                quant = layers(l);
+                quant.Weights = transform(quant_weights,K{2});
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
