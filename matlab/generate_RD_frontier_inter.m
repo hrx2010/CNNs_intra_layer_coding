@@ -1,4 +1,4 @@
-function generate_RD_frontier_intra(archname,tranname,testsize,inlayers,outlayer)
+function generate_RD_frontier_inter(archname,tranname,testsize,inlayers,outlayer)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -10,7 +10,7 @@ labeldir = './ILSVRC2012_val.txt';
 
 maxsteps = 96;
 
-load(sprintf('%s_%s_val_100_%s_intra',archname,tranname,outlayer));
+load(sprintf('%s_%s_val_100_%s_inter',archname,tranname,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 
@@ -43,20 +43,20 @@ for j = 1:maxsteps
     for l = inlayers
         K = gettrans(tranname,archname,l);
         [h,w,p,q,g] = size(quants(l).Weights);
-        quant_weights = reshape(permute(transform_intra(quants(l).Weights,K{1}),[1,2,3,4,5]),[h*w,p,q,g]);
+        quant_weights = reshape(permute(transform_inter(quants(l).Weights,K{1}),[1,2,3,5,4]),[h,w,p*g,q]);
         [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
         ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
         delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
-        denom{l} = h*w*p*q*g;%ones(size(coded{l}))*(p*q*g);
+        denom{l} = h*w*p*q*g;%ones(size(coded{l}))*(h*w*q);
         quant_weights = quants(l).Weights;
-        for i = 1:s:h*w
-            rs = i:min(h*w,s+i-1);
+        for i = 1:s:p*g
+            rs = i:min(p*g,s+i-1);
             % quantize for the given lambda
-            quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta{l}(i),coded{l}(i)/(s*p*q*g));
+            quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta{l}(i),coded{l}(i)/(s*h*w*q));
             %assert(qentropy(quants(l).Weights(r,c,:))*(p*q) == coded{l}(i));
         end
-        quants(l).Weights = transform_intra(permute(reshape(quant_weights,[h,w,p,q,g]),[1,2,3,4,5]),K{2});
+        quants(l).Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
         wdist{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
     end
     ournet = replaceLayers(neural,quants);
