@@ -10,9 +10,12 @@ labeldir = './ILSVRC2012_val.txt';
 
 maxsteps = 96;
 
-load(sprintf('%s_%s_val_1000_%s',archname,tranname,outlayer));
+load(sprintf('%s_%s_val_100_%s',archname,tranname,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
+
+[cmeans,offset] = channelMeans(neural,images);
+layers = modifyConvLayers(layers,cmeans,offset);
 neural = assembleNetwork(layers);
 nclass = assembleNetwork(lclass);
 

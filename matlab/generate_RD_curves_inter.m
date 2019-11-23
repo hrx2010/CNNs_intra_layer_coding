@@ -58,7 +58,7 @@ for l = inlayers
                 quant_weights = layer_weights;
                 delta = offset + 0.25*(j-1);
                 quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta,B);
-                coded = B*(h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
+                coded = B*(s*h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant = layers(l);
                 quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
@@ -74,7 +74,7 @@ for l = inlayers
                 mean_W_sse = hist_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
                              archname, tranname, l, l_length, i, p*g, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(h*w*q)));
+                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(s*h*w*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
