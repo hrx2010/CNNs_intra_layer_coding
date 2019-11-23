@@ -27,9 +27,12 @@ function points = lambda2points(X,Y,Z,lambda)
 % PERFORMANCE OF THIS SOFTWARE.
 
     lambda = max(0,lambda);
-    points = zeros(size(Z,2),size(Z,3));
+    points = zeros(size(Z,2),size(Z,3))*NaN;
     % compute the convex hulls
     for i = 1:size(X,2)
+        if all(isnan(X(:,i)))
+            continue
+        end
         k = rdhull(X(:,i),Y(:,i));
         l = [-diff(Y(k,i))./diff(X(k,i));0];
         %find the first point with slope less than lambda
