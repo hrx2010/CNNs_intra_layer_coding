@@ -58,7 +58,7 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
                   case 'klt'
                     covX = eye(h*h);
                 end
-                invcovX = inv(covX+covX');
+                invcovX = inv(covX+covX' + 0.01*eigs(covX+covX',1)*eye(h*h));
                 [V,~] = eig(covH+covH',invcovX+invcovX','chol');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
                 K{l}{j,k} = inv(invVt);
