@@ -35,9 +35,9 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    K = gettrans([tranname,'_inter'],archname,l);
+    basis_vectors = gettrans([tranname,'_inter'],archname,l);
     [h,w,p,q,g] = size(layers(l).Weights);
-    layer_weights = reshape(permute(transform_inter(layers(l).Weights,K{1}),[1,2,3,5,4]),[h,w,p*g,q]);
+    layer_weights = reshape(permute(transform_inter(layers(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
     hist_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
@@ -61,7 +61,7 @@ for l = inlayers
                 coded = B*(s*h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
+                quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),basis_vectors(:,:,:,2));
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
@@ -89,4 +89,4 @@ for l = inlayers
         end
     end
 end
-save(sprintf('%s_%s_val_%d_%s_inter',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse');
+save(sprintf('%s_%s_val_%d_%s_inter',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse','strides');

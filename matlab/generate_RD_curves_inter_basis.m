@@ -1,4 +1,4 @@
-function generate_RD_curves_intra(archname,tranname,testsize,inlayers,outlayer,strides)
+function generate_RD_curves_inter_basis(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -35,18 +35,18 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    K = gettrans([tranname,'_intra'],archname,l);
+    basis_vectors = gettrans([tranname,'_inter'],archname,l);
     [h,w,p,q,g] = size(layers(l).Weights);
-    layer_weights = reshape(transform(layers(l).Weights,K{1}),[h*w,p,q,g]);
-    hist_delta{l} = zeros(maxrates,maxsteps,h*w)*NaN;
-    hist_coded{l} = zeros(maxrates,maxsteps,h*w)*NaN;
-    hist_W_sse{l} = zeros(maxrates,maxsteps,h*w)*NaN;
-    hist_Y_sse{l} = zeros(maxrates,maxsteps,h*w)*NaN;
-    hist_Y_top{l} = zeros(maxrates,maxsteps,h*w)*NaN;
+    layer_weights = reshape(permute(transform_inter(layers(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
+    hist_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    hist_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     s = strides(l);
-    for i = 1:s:h*w % iterate over the frequency  bands
-        rs = i:min(h*w,s+i-1);
-        scale = floor(log2(sqrt(mean(reshape(layer_weights(rs,:,:,:),[],1).^2))));
+    for i = 1:s:p*g % iterate over the frequency bands
+        rs = i:min(p*g,s+i-1);
+        scale = floor(log2(sqrt(mean(reshape(basis_vectors(:,rs,:,2),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -55,13 +55,13 @@ for l = inlayers
             last_W_sse = Inf;
             for j = 1:maxsteps
                 % quantize each of the q slices
-                quant_weights = layer_weights;
+                quant_vectors = basis_vectors;
                 delta = offset + 0.25*(j-1);
-                quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta,B);
-                coded = B*(s*p*q*g); %qentropy(quant.Weights(r,c,:),B)*(p*q);
+                quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
+                coded = B*(s*1*1*p); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = transform(reshape(quant_weights,[h,w,p,q,g]),K{2});
+                quant.Weights = transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),quant_vectors(:,:,:,2));
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
@@ -73,8 +73,8 @@ for l = inlayers
                 mean_Y_sse = hist_Y_sse{l}(k,j,i);
                 mean_W_sse = hist_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, h*w, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*hist_Y_top{l}(k,j,i), coded/(s*p*q*g)));
+                             archname, tranname, l, l_length, i, p*g, scale, delta, mean_Y_sse, ...
+                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(s*h*w*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
@@ -89,4 +89,4 @@ for l = inlayers
         end
     end
 end
-save(sprintf('%s_%s_val_%d_%s_intra',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse','strides');
+save(sprintf('%s_%s_val_%d_%s_inter',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse','strides');

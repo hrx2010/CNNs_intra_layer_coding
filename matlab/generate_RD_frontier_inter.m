@@ -50,6 +50,7 @@ for j = 1:maxsteps
         delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
         denom{l} = h*w*p*q*g;%ones(size(coded{l}))*(h*w*q);
         quant_weights = quants(l).Weights;
+        s = strides(l);
         for i = 1:s:p*g
             rs = i:min(p*g,s+i-1);
             % quantize for the given lambda
