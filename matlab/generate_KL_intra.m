@@ -58,7 +58,7 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
                   case 'klt'
                     covX = eye(h*h);
                 end
-                invcovX = inv(covX+covX' + 0.01*eigs(covX+covX',1)*eye(h*h));
+                invcovX = inv(covX+covX');
                 [V,~] = eig(covH+covH',invcovX+invcovX','chol');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
                 K{l}{j,k} = inv(invVt);
@@ -70,5 +70,5 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
 
         disp(sprintf('%s %s | generated %d-D transform for layer %03d', archname, klttype, dimtype, l));
     end
-    save(sprintf('%s_%s%d',archname,klttype,dimtype),'K','Kt','invK','invKt');
+    save(sprintf('%s_%s%d_intra',archname,klttype,dimtype),'K','Kt','invK','invKt');
 end

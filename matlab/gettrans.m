@@ -1,7 +1,7 @@
 function T = gettrans(tranname,archname,layernum)
     T = cell(2,1);
     switch tranname
-      case 'dct2'
+      case 'dct2_intra'
         T{1} = @dct2;
         T{2} = @idct2;
         T{3} = @dct2;
@@ -11,7 +11,7 @@ function T = gettrans(tranname,archname,layernum)
         T{2} = @(x) idct2(x,[2,2]);
         T{3} = @(x) dct2(x,[2,2]);
         T{4} = @(x) idct2(x,[2,2]);
-      case 'dst2'
+      case 'dst2_intra'
         T{1} = @dst2;
         T{2} = @idst2;
         T{3} = @dst2;
@@ -21,12 +21,12 @@ function T = gettrans(tranname,archname,layernum)
         T{2} = @(x) idst2(x,[2,2]);
         T{3} = @(x) dst2(x,[2,2]);
         T{4} = @(x) idst2(x,[2,2]);
-      case 'dft2'
+      case 'dft2_intra'
         T{1} = @dft2;
         T{2} = @idft2;
         T{3} = @dft2;
         T{4} = @idft2;
-      case 'idt2'
+      case 'idt2_intra'
         T{1} = @idt2;
         T{2} = @iidt2;
         T{3} = @idt2;

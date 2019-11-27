@@ -54,7 +54,6 @@ for j = 1:maxsteps
             rs = i:min(p*g,s+i-1);
             % quantize for the given lambda
             quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta{l}(i),coded{l}(i)/(s*h*w*q));
-            %assert(qentropy(quants(l).Weights(r,c,:))*(p*q) == coded{l}(i));
         end
         quants(l).Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
         wdist{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
