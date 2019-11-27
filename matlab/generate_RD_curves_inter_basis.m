@@ -1,4 +1,4 @@
-function generate_RD_curves_inter(archname,tranname,testsize,inlayers,outlayer,strides)
+function generate_RD_curves_inter_basis(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -46,7 +46,7 @@ for l = inlayers
     s = strides(l);
     for i = 1:s:p*g % iterate over the frequency bands
         rs = i:min(p*g,s+i-1);
-        scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
+        scale = floor(log2(sqrt(mean(reshape(basis_vectors(:,rs,:,2),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -55,13 +55,13 @@ for l = inlayers
             last_W_sse = Inf;
             for j = 1:maxsteps
                 % quantize each of the q slices
-                quant_weights = layer_weights;
+                quant_vectors = basis_vectors;
                 delta = offset + 0.25*(j-1);
-                quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta,B);
-                coded = B*(s*h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
+                quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
+                coded = B*(s*1*1*p); %qentropy(quant.Weights(r,c,:),B)*(p*q);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),basis_vectors(:,:,:,2));
+                quant.Weights = transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),quant_vectors(:,:,:,2));
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);

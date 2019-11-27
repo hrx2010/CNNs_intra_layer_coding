@@ -42,10 +42,10 @@ function K = generate_KL_inter(archname,testsize,klttype)
     for l = 1:l_length
         layer = layers(l);
         [h,w,p,q,g] = size(layer.Weights);
-        K{l} = cell(1,g);
-        Kt{l} = cell(1,g);
-        invK{l} = cell(1,g);
-        invKt{l} = cell(1,g);
+        K{l} = zeros(p,p,1,g);
+        Kt{l} = zeros(p,p,1,g);
+        invK{l} = zeros(p,p,1,g);
+        invKt{l} = zeros(p,p,1,g);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
         X = X - mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
 
@@ -61,10 +61,10 @@ function K = generate_KL_inter(archname,testsize,klttype)
                 invcovX = inv(covX+covX');
                 [V,~] = eig(covH+covH',invcovX+invcovX','chol');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
-                K{l}{j,k} = inv(invVt);
-                Kt{l}{j,k} = K{l}{j,k}';
-                invK{l}{j,k} = invVt;
-                invKt{l}{j,k} = K{l}{j,k}';
+                K{l}(:,:,1,k) = inv(invVt);
+                Kt{l}(:,:,1,k) = K{l}(:,:,1,k);
+                invK{l}(:,:,1,k) = invVt;
+                invKt{l}(:,:,1,k) = invK{l}(:,:,1,k);;
             end
         end
 

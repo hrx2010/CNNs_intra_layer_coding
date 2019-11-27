@@ -1,9 +1,29 @@
 clear all;
 close all;
 
-archname = 'alexnet';
+archname = 'alexnet_idt2_base_val';
 testsize = 1024;
 load([archname,'_',num2str(testsize)]);
+
+for l = 1:5
+    c = (l - 1)/5;
+    [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
+    semilogy(0:16,best_Y_sse,'-','Color',c*[1,1,1]);
+    hold on;
+    semilogy(0:16,best_Y_sse,'.','MarkerSize',8,'Color',c*[1,1,1]);
+end
+axis([0,8,1e-3,1e1]);
+xticks(0:2:8);
+x = xticklabels;
+x{end} = '$R_l$';
+xticklabels(x);
+y = yticklabels;
+y{end-1} = '$10^{-0}$';
+y{end} = '$D_\mathrm{pred}$';
+yticklabels(y);
+
+set(gcf,'Color','none');
+pdfprint('dccfig_dist_sum.pdf','Width',9,'Height',9,'Position',[2,1.75,6.5,6.5]);
 
 X = hist_coded(:,:,1);
 Y = squeeze(mean(hist_Y_sse,3))/1000;
@@ -48,4 +68,3 @@ ylabel('R-D trade-off ($\lambda$)');
 axis([10^-4,10^0,10^-8,10^0]);
 pdfprint('temp1.pdf','Width',21,'Height',12,'Position',[3.5,3,16.5,8]);
 
-%Burrows-wheeler.
