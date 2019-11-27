@@ -60,10 +60,11 @@ function K = generate_KL_inter(archname,testsize,klttype)
                 end
                 invcovX = inv(covX+covX');
                 [V,~] = eig(covH+covH',invcovX+invcovX','chol');
-                K{l}(:,:,1,k) = V';
-                Kt{l}(:,:,1,k) = V;
-                invK{l}(:,:,1,k) = inv(V');
-                invKt{l}(:,:,1,k) = inv(V);
+                invVt = inv(V')./sqrt(sum(inv(V').^2));
+                K{l}(:,:,1,k) = inv(invVt);
+                Kt{l}(:,:,1,k) = K{l}(:,:,1,k);
+                invK{l}(:,:,1,k) = invVt;
+                invKt{l}(:,:,1,k) = invK{l}(:,:,1,k);;
             end
         end
 

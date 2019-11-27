@@ -1,4 +1,4 @@
-function generate_RD_frontier_inter(archname,tranname,testsize,inlayers,outlayer)
+function generate_RD_frontier_inter(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -41,7 +41,7 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        K = gettrans(tranname,archname,l);
+        K = gettrans([tranname,'_inter'],archname,l);
         [h,w,p,q,g] = size(quants(l).Weights);
         quant_weights = reshape(permute(transform_inter(quants(l).Weights,K{1}),[1,2,3,5,4]),[h,w,p*g,q]);
         [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
@@ -49,7 +49,6 @@ for j = 1:maxsteps
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
         delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
         denom{l} = h*w*p*q*g;%ones(size(coded{l}))*(h*w*q);
-        quant_weights = quants(l).Weights;
         s = strides(l);
         for i = 1:s:p*g
             rs = i:min(p*g,s+i-1);
@@ -71,9 +70,9 @@ for j = 1:maxsteps
     [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
     hist_sum_Y_sse(j,1) = mean((Y_hats(:) - Y(:)).^2,1);
     hist_sum_Y_top(j,1) = mean(images.Labels == Y_cats);
-    pred_sum_Y_sse(j,1) = sum(ydist,1);
-    hist_sum_W_sse(j,1) = sum(wdist(:))/sum(denom(:));
-    hist_sum_coded(j,1) = sum(coded(:))/sum(denom(:));
+    pred_sum_Y_sse(j,1) = sum(ydist(:),'omitnan');
+    hist_sum_W_sse(j,1) = sum(wdist(:),'omitnan')/sum(denom(:),'omitnan');
+    hist_sum_coded(j,1) = sum(coded(:),'omitnan')/sum(denom(:),'omitnan');
 
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
                  archname, tranname, slope, hist_sum_Y_sse(j,1), pred_sum_Y_sse(j,1), ...
@@ -83,5 +82,5 @@ for j = 1:maxsteps
     end
 end
 
-save(sprintf('%s_%s_sum_%d_%d_%d_%s',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
+save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
      'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top');
