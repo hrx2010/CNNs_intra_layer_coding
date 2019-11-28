@@ -35,8 +35,8 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    basis_vectors = gettrans([tranname,'_inter'],archname,l);
     [h,w,p,q,g] = size(layers(l).Weights);
+    basis_vectors = gettrans([tranname,'_inter'],archname,l);
     layer_weights = reshape(permute(transform_inter(layers(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
     hist_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     hist_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
@@ -48,7 +48,7 @@ for l = inlayers
         rs = i:min(p*g,s+i-1);
         scale = floor(log2(sqrt(mean(reshape(basis_vectors(:,rs,:,2),[],1).^2))));
         coded = Inf;
-        offset = scale + 2;
+        offset = scale - 2;
         for k = 1:maxrates %number of bits
             B = k - 1;
             last_Y_sse = Inf;
@@ -58,7 +58,7 @@ for l = inlayers
                 quant_vectors = basis_vectors;
                 delta = offset + 0.25*(j-1);
                 quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
-                coded = B*(s*1*1*p); %qentropy(quant.Weights(r,c,:),B)*(p*q);
+                coded = B*(s*1*1*p);
                 % assemble the net using layers
                 quant = layers(l);
                 quant.Weights = transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),quant_vectors(:,:,:,2));
@@ -74,7 +74,7 @@ for l = inlayers
                 mean_W_sse = hist_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
                              archname, tranname, l, l_length, i, p*g, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(s*h*w*q)));
+                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(s*1*1*p)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
@@ -89,4 +89,4 @@ for l = inlayers
         end
     end
 end
-save(sprintf('%s_%s_val_%d_%s_inter',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse','strides');
+save(sprintf('%s_%s_val_%d_%s_inter_basis',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse','strides');

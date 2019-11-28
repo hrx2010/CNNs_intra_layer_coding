@@ -58,7 +58,7 @@ for l = inlayers
                 quant_weights = layer_weights;
                 delta = offset + 0.25*(j-1);
                 quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta,B);
-                coded = B*(s*h*w*q); %qentropy(quant.Weights(r,c,:),B)*(p*q);
+                coded = B*(s*h*w*q);
                 % assemble the net using layers
                 quant = layers(l);
                 quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),basis_vectors(:,:,:,2));

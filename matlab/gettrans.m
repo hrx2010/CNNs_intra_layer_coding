@@ -37,10 +37,7 @@ function T = gettrans(tranname,archname,layernum)
         T{3} = 1;
         T{4} = 1;
       otherwise
-        load(sprintf('%s_%s',archname,tranname),'K','invK','invKt','Kt');
-        T{1} = K{layernum};
-        T{2} = invK{layernum};
-        T{3} = invKt{layernum};
-        T{4} = Kt{layernum};
+        load(sprintf('%s_%s',archname,tranname),'T');
+        T = T{layernum};
     end
 end
