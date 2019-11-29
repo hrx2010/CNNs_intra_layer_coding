@@ -24,11 +24,11 @@ trans = {str2func(tranname), str2func(['i',tranname])};
 l_kernel = findconv(neural.Layers); 
 l_length = length(l_kernel);
 
-hist_delta = cell(l_length,1);
-hist_coded = cell(l_length,1);
-hist_W_sse = cell(l_length,1);
-hist_Y_sse = cell(l_length,1);
-hist_Y_top = cell(l_length,1);
+base_delta = cell(l_length,1);
+base_coded = cell(l_length,1);
+base_W_sse = cell(l_length,1);
+base_Y_sse = cell(l_length,1);
+base_Y_top = cell(l_length,1);
 
 [Y,Y_cats] = pred(neural,nclass,images,outlayer);
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
@@ -38,11 +38,11 @@ for l = inlayers
     [h,w,p,q,g] = size(layers(l).Weights);
     basis_vectors = gettrans([tranname,'_inter'],archname,l);
     layer_weights = reshape(permute(transform_inter(layers(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
-    hist_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    hist_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    hist_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    hist_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    hist_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    base_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    base_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    base_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    base_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+    base_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     s = strides(l);
     for i = 1:s:p*g % iterate over the frequency bands
         rs = i:min(p*g,s+i-1);
@@ -65,21 +65,21 @@ for l = inlayers
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
-                hist_Y_sse{l}(k,j,i) = mean((Y_hats(:) - Y(:)).^2);
-                hist_Y_top{l}(k,j,i) = mean(images.Labels == Y_cats);
-                hist_W_sse{l}(k,j,i) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
-                hist_delta{l}(k,j,i) = delta;
-                hist_coded{l}(k,j,i) = coded;
-                mean_Y_sse = hist_Y_sse{l}(k,j,i);
-                mean_W_sse = hist_W_sse{l}(k,j,i);
+                base_Y_sse{l}(k,j,i) = mean((Y_hats(:) - Y(:)).^2);
+                base_Y_top{l}(k,j,i) = mean(images.Labels == Y_cats);
+                base_W_sse{l}(k,j,i) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
+                base_delta{l}(k,j,i) = delta;
+                base_coded{l}(k,j,i) = coded;
+                mean_Y_sse = base_Y_sse{l}(k,j,i);
+                mean_W_sse = base_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
                              archname, tranname, l, l_length, i, p*g, scale, delta, mean_Y_sse, ...
-                             mean_W_sse, 100*mean(hist_Y_top{l}(k,j,i)), coded/(s*1*1*p)));
+                             mean_W_sse, 100*mean(base_Y_top{l}(k,j,i)), coded/(s*1*1*p)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
                    (B == 0)
-                    [~,j] = min(hist_Y_sse{l}(k,:,i));
-                    delta = hist_delta{l}(k,j,i);
+                    [~,j] = min(base_Y_sse{l}(k,:,i));
+                    delta = base_delta{l}(k,j,i);
                     offset = delta - 2;
                     break;
                 end
@@ -89,4 +89,4 @@ for l = inlayers
         end
     end
 end
-save(sprintf('%s_%s_val_%d_%s_inter_basis',archname,tranname,testsize,outlayer),'hist_coded','hist_Y_sse','hist_Y_top','hist_delta','hist_W_sse','strides');
+save(sprintf('%s_%s_val_%d_%s_inter_basis',archname,tranname,testsize,outlayer),'base_coded','base_Y_sse','base_Y_top','base_delta','base_W_sse','strides');

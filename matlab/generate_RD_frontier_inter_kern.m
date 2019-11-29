@@ -41,9 +41,9 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        K = gettrans([tranname,'_inter'],archname,l);
         [h,w,p,q,g] = size(quants(l).Weights);
-        quant_weights = reshape(permute(transform_inter(quants(l).Weights,K{1}),[1,2,3,5,4]),[h,w,p*g,q]);
+        basis_vectors = gettrans([tranname,'_inter'],archname,l);
+        quant_weights = reshape(permute(transform_inter(quants(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
         [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
         ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
@@ -55,7 +55,7 @@ for j = 1:maxsteps
             % quantize for the given lambda
             quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta{l}(i),coded{l}(i)/(s*h*w*q));
         end
-        quants(l).Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),K{2});
+        quants(l).Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),basis_vectors(:,:,:,2));
         wdist{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
     end
     ournet = replaceLayers(neural,quants);
