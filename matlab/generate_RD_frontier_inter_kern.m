@@ -1,4 +1,4 @@
-function generate_RD_frontier_inter(archname,tranname,testsize,inlayers,outlayer,strides)
+function generate_RD_frontier_inter_kern(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -44,7 +44,7 @@ for j = 1:maxsteps
         [h,w,p,q,g] = size(quants(l).Weights);
         basis_vectors = gettrans([tranname,'_inter'],archname,l);
         quant_weights = reshape(permute(transform_inter(quants(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
-        [best_Y_sse,best_delta,best_coded] = finddelta(mean(hist_Y_sse{l},4),hist_delta{l},hist_coded{l});
+        [best_Y_sse,best_delta,best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
         ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
         delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);

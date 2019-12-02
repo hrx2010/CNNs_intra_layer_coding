@@ -1,4 +1,4 @@
-function generate_RD_curves_inter_kernel(archname,tranname,testsize,inlayers,outlayer,strides)
+function generate_RD_curves_inter_kern(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
