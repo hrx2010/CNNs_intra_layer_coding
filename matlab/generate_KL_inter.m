@@ -22,9 +22,6 @@ function K = generate_KL_inter(archname,testsize,klttype)
         klttype = 'kkt';
     end
 
-
-
-
     imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
     labeldir = './ILSVRC2012_val.txt';
 

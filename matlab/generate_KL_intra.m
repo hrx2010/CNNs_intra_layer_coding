@@ -1,4 +1,4 @@
-function K = generate_KL_intra(archname,testsize,klttype,dimtype)
+function K = generate_KL_intra(archname,testsize,klttype)
 %GENERATE_KL_INTER Generate KL transform for inter-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE,DIMTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
@@ -20,9 +20,6 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
     
     if nargin < 3
         klttype = 'kkt';
-    end
-    if nargin < 4
-        dimtype = 1;
     end
 
     imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
@@ -47,7 +44,13 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
         invK{l} = cell(p,g);
         invKt{l} = cell(p,g);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-        X = X - mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
+
+        switch ndims(layer.Weights)
+          case 2
+            X = reshape(X-mean(X,4),1,1,p,[]);
+          otherwise
+            X = X - mean(mean(mean(X,1),2),4);
+        end
         % find two KLTs, each using the EVD
         for k = 1:g
             for j = 1:p
@@ -70,5 +73,5 @@ function K = generate_KL_intra(archname,testsize,klttype,dimtype)
 
         disp(sprintf('%s %s | generated %d-D transform for layer %03d', archname, klttype, dimtype, l));
     end
-    save(sprintf('%s_%s%d_intra',archname,klttype,dimtype),'K','Kt','invK','invKt');
+    save(sprintf('%s_%s_intra',archname,klttype,dimtype),'K','Kt','invK','invKt');
 end
