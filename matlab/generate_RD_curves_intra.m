@@ -36,7 +36,7 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 layers = neural.Layers(l_kernel);
 for l = inlayers
     K = gettrans([tranname,'_intra'],archname,l);
-    [h,w,p,q,g] = size(layers(l).Weights);
+    [h,w,p,q,g] = size(perm5(layers(l).Weights,layers(l)));
     layer_weights = reshape(transform_intra(layers(l).Weights,K{1}),[h*w,p,q,g]);
     hist_delta{l} = zeros(maxrates,maxsteps,h*w)*NaN;
     hist_coded{l} = zeros(maxrates,maxsteps,h*w)*NaN;

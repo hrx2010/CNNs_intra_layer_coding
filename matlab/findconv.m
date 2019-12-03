@@ -5,6 +5,7 @@ function l = findconv(layers,types)
     for i = 1:length(types)
         if ismember('full',types)
             types{end+1} = 'nnet.cnn.layer.FullyConnectedLayer';
+            types{end+1} = 'nnet.cnn.layer.FullyConnectedLayerCustom';
         end
         if ismember('conv',types)
             types{end+1} = 'nnet.cnn.layer.Convolution2DLayer';

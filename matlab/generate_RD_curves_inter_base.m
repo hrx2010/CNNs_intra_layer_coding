@@ -1,4 +1,4 @@
-function generate_RD_curves_inter_basis(archname,tranname,testsize,inlayers,outlayer,strides)
+function generate_RD_curves_inter_base(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -35,17 +35,18 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    [h,w,p,q,g] = size(layers(l).Weights);
-    basis_vectors = gettrans([tranname,'_inter'],archname,l);
-    layer_weights = reshape(permute(transform_inter(layers(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
+    [h,w,p,q,g] = size(perm5(layers(l).Weights,layers(l)));
+    basis_vectors = gettrans([tranname,'_100_inter'],archname,l);
+    layer_weights = reshape(permute(transform_inter(perm5(layers(l).Weights,layers(l)),basis_vectors(:,:,:,1)),...
+                                    [1,2,3,5,4]),[h,w,p*g,q]);
     base_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     base_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     base_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     base_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     base_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     s = strides(l);
-    for i = 1:s:p*g % iterate over the frequency bands
-        rs = i:min(p*g,s+i-1);
+    for i = 1:s:min(h*w*q,p*g) % iterate over the frequency bands
+        rs = i:min(min(h*w*q,p*g),s+i-1);
         scale = floor(log2(sqrt(mean(reshape(basis_vectors(:,rs,:,2),[],1).^2))));
         coded = Inf;
         offset = scale - 2;
@@ -61,7 +62,8 @@ for l = inlayers
                 coded = B*(s*1*1*p);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),quant_vectors(:,:,:,2));
+                quant.Weights = perm5(transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+                                                      quant_vectors(:,:,:,2)),quant);
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);

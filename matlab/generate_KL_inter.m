@@ -1,4 +1,4 @@
-function K = generate_KL_inter(archname,testsize,klttype)
+function T = generate_KL_inter(archname,testsize,klttype)
 %GENERATE_KL_INTER Generate KL transform for intra-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
@@ -38,9 +38,9 @@ function K = generate_KL_inter(archname,testsize,klttype)
 
     for l = 1:l_length
         layer = layers(l);
-        layer_weights = perm5(layer.Weights);
+        layer_weights = perm5(layer.Weights,layer);
         [h,w,p,q,g] = size(layer_weights);
-        T{l} = zeros(p,p,g,4);
+        T{l} = zeros(p,p,g,2);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
 
         switch ndims(layer.Weights)
@@ -59,17 +59,16 @@ function K = generate_KL_inter(archname,testsize,klttype)
                   case 'klt'
                     covX = eye(p);
                 end
-                invcovX = inv(covX+covX' + 0.01*eye(p)*eigs(covX+covX',1));
+                invcovX = inv(covX+covX'+0.01*eye(p)*eigs(covX+covX',1));
                 [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
-                T{l}(:,:,k,1) = inv(invVt);
-                T{l}(:,:,k,2) = invVt;
-                T{l}(:,:,k,3) = T{l}(:,:,k,1)';
-                T{l}(:,:,k,4) = T{l}(:,:,k,2)';
+                T{l}(:,:,k,1) = inv(invVt(:,end:-1:1));
+                T{l}(:,:,k,2) = invVt(:,end:-1:1);
             end
         end
-        T{l} = reshape(T{l},[p,p*g,1,4]);
-        disp(sprintf('%s %s | generated inter transform for layer %03d', archname, klttype, l));
+        T{l} = reshape(T{l},[p,p*g,1,2]);
+        disp(sprintf('%s %s | generated inter transform for layer %03d using %d images',...
+                     archname, klttype, l, testsize));
     end        
-    save(sprintf('%s_%s_%d_inter',archname,klttype,testsize),'T');
+    save(sprintf('%s_%s_%d_inter',archname,klttype,testsize),'-v7.3','T');
 end

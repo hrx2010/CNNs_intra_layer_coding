@@ -35,8 +35,8 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    [h,w,p,q,g] = size(layers(l).Weights);
-    basis_vectors = gettrans([tranname,'_inter'],archname,l);
+    [h,w,p,q,g] = size(perm5(layers(l).Weights,layers(l)));
+    basis_vectors = gettrans([tranname,'_100_inter'],archname,l);
     layer_weights = reshape(permute(transform_inter(perm5(layers(l).Weights,layers(l)),basis_vectors(:,:,:,1)),...
                                     [1,2,3,5,4]),[h,w,p*g,q]);
     kern_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
@@ -45,8 +45,8 @@ for l = inlayers
     kern_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     kern_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     s = strides(l);
-    for i = 1:s:p*g % iterate over the frequency bands
-        rs = i:min(p*g,s+i-1);
+    for i = 1:s:min(h*w*q,p*g) % iterate over the frequency bands
+        rs = i:min(min(h*w*q,p*g),s+i-1);
         scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
@@ -75,7 +75,7 @@ for l = inlayers
                 mean_Y_sse = kern_Y_sse{l}(k,j,i);
                 mean_W_sse = kern_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %03d/%03d, scale: %3d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, p*g, scale, delta, mean_Y_sse, ...
+                             archname, tranname, l, l_length, i, min(h*w*q,p*g), scale, delta, mean_Y_sse, ...
                              mean_W_sse, 100*mean(kern_Y_top{l}(k,j,i)), coded/(s*h*w*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...
