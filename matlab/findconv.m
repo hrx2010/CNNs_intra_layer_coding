@@ -1,6 +1,6 @@
 function l = findconv(layers,types)
     if nargin < 2
-        types = {'conv'};
+        types = {'conv','full'};
     end
     for i = 1:length(types)
         if ismember('full',types)

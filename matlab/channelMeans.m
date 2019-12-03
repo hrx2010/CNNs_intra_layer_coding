@@ -27,10 +27,17 @@ function [means,offset] = channelMeans(neural,images)
         layer = layers(l);
         [h,w,p,q,g] = size(layer.Weights);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-        means{l} = mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
-        offset{l} = zeros(1,1,q,g);
-        for k = 1:g
-            offset{l}(1,1,:,k) = squeeze(sum(means{l}(:,:,(k-1)*p+(1:p)).*sum(sum(layer.Weights(:,:,:,:,k),1),2)));
+        [H,W,P,S] = size(X);
+        switch ndims(layer.Weights)
+          case 2
+            means{l} = mean(X,4);
+            offset{l} = layer.Weights*means{l}(:);
+          otherwise
+            means{l} = mean(mean(mean(X,1),2),4);
+            offset{l} = zeros(1,1,q,g);
+            for k = 1:g
+                offset{l}(1,1,:,k) = squeeze(sum(sum(layer.Weights(:,:,:,:,k),1),2))'*squeeze(means{l}(1,1,(k-1)*p+(1:p)));
+            end
         end
     end
 end

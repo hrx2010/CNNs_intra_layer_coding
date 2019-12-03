@@ -37,7 +37,8 @@ layers = neural.Layers(l_kernel);
 for l = inlayers
     [h,w,p,q,g] = size(layers(l).Weights);
     basis_vectors = gettrans([tranname,'_inter'],archname,l);
-    layer_weights = reshape(permute(transform_inter(layers(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
+    layer_weights = reshape(permute(transform_inter(perm5(layers(l).Weights,layers(l)),basis_vectors(:,:,:,1)),...
+                                    [1,2,3,5,4]),[h,w,p*g,q]);
     kern_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     kern_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     kern_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
@@ -61,7 +62,8 @@ for l = inlayers
                 coded = B*(s*h*w*q);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),basis_vectors(:,:,:,2));
+                quant.Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+                                                      basis_vectors(:,:,:,2)),quant);
                 ournet = replaceLayers(neural,quant);
 
                 [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);

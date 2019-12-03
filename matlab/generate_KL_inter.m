@@ -41,22 +41,29 @@ function K = generate_KL_inter(archname,testsize,klttype)
 
     for l = 1:l_length
         layer = layers(l);
-        [h,w,p,q,g] = size(layer.Weights);
+        layer_weights = perm5(layer.Weights);
+        [h,w,p,q,g] = size(layer_weights);
         T{l} = zeros(p,p,g,4);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-        X = X - mean(mean(mean(X,1),2),4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
+
+        switch ndims(layer.Weights)
+          case 2
+            X = reshape(X-mean(X,4),1,1,p,[]);
+          otherwise
+            X = X - mean(mean(mean(X,1),2),4);
+        end
 
         for k = 1:g
             for j = 1:1 % only one transform per group
-                covH = cov(reshape(permute(double(layer.Weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
+                covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
                 switch klttype
                   case 'kkt'
                     covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
                   case 'klt'
                     covX = eye(p);
                 end
-                invcovX = inv(covX+covX');
-                [V,~] = eig(covH+covH',invcovX+invcovX','chol');
+                invcovX = inv(covX+covX' + 0.01*eye(p)*eigs(covX+covX',1));
+                [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
                 T{l}(:,:,k,1) = inv(invVt);
                 T{l}(:,:,k,2) = invVt;
@@ -65,7 +72,7 @@ function K = generate_KL_inter(archname,testsize,klttype)
             end
         end
         T{l} = reshape(T{l},[p,p*g,1,4]);
-        disp(sprintf('%s %s | generated transform for layer %03d', archname, klttype, l));
+        disp(sprintf('%s %s | generated inter transform for layer %03d', archname, klttype, l));
     end        
-    save(sprintf('%s_%s_inter',archname,klttype),'T');
+    save(sprintf('%s_%s_%d_inter',archname,klttype,testsize),'T');
 end
