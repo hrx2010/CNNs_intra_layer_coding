@@ -10,7 +10,7 @@ labeldir = './ILSVRC2012_val.txt';
 
 maxsteps = 96;
 
-load(sprintf('%s_%s_val_100_%s_inter',archname,tranname,outlayer));
+load(sprintf('%s_%s_val_100_%s_inter_kern',archname,tranname,outlayer));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 [layers,lclass] = removeLastLayer(neural);
 
@@ -41,9 +41,10 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        [h,w,p,q,g] = size(quants(l).Weights);
-        basis_vectors = gettrans([tranname,'_inter'],archname,l);
-        quant_weights = reshape(permute(transform_inter(quants(l).Weights,basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
+        [h,w,p,q,g] = size(perm5(quants(l).Weights,quants(l)));
+        basis_vectors = gettrans([tranname,'_5000_inter'],archname,l);
+        quant_weights = reshape(permute(transform_inter(perm5(quants(l).Weights,quants(l)),basis_vectors(:,:,:,1)),...
+                                        [1,2,3,5,4]),[h,w,p*g,q]);
         [best_Y_sse,best_delta,best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
         ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
         coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
@@ -51,11 +52,12 @@ for j = 1:maxsteps
         denom{l} = h*w*p*q*g;%ones(size(coded{l}))*(h*w*q);
         s = strides(l);
         for i = 1:s:p*g
-            rs = i:min(p*g,s+i-1);
+            rs = i:min(min(h*w*q,p*g),s+i-1);
             % quantize for the given lambda
             quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta{l}(i),coded{l}(i)/(s*h*w*q));
         end
-        quants(l).Weights = transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),basis_vectors(:,:,:,2));
+        quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+                                                  basis_vectors(:,:,:,2)),quants(l));
         wdist{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
     end
     ournet = replaceLayers(neural,quants);
@@ -81,5 +83,5 @@ for j = 1:maxsteps
     end
 end
 
-save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
+save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter_both',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
      'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top');
