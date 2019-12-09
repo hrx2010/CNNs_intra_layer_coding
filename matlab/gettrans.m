@@ -31,11 +31,6 @@ function T = gettrans(tranname,archname,layernum)
         T{2} = @iidt2;
         T{3} = @idt2;
         T{4} = @iidt2;
-      case 'idt_fully'
-        T{1} = 1;
-        T{2} = 1;
-        T{3} = 1;
-        T{4} = 1;
       case {'kkt1_intra','klt1_intra'}
         load(sprintf('%s_%s',archname,tranname),'K','invK','invKt','Kt');
         T{1} = K{layernum};

@@ -52,11 +52,15 @@ function T = generate_KL_inter(archname,testsize,klttype)
 
         for k = 1:g
             for j = 1:1 % only one transform per group
-                covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
                 switch klttype
                   case 'kkt'
+                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
                     covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
                   case 'klt'
+                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
+                    covX = eye(p);
+                  case 'idt'
+                    covH = eye(p);
                     covX = eye(p);
                 end
                 invcovX = inv(covX+covX'+0.01*eye(p)*eigs(covX+covX',1));

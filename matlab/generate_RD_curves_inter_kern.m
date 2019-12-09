@@ -45,9 +45,12 @@ for l = inlayers
     kern_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     kern_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
     s = strides(l);
-    for i = 1:s:min(h*w*q,p*g) % iterate over the frequency bands
-        rs = i:min(min(h*w*q,p*g),s+i-1);
+    for i = 1:s:p*g % iterate over the frequency bands
+        rs = i:min(p*g,s+i-1);
         scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
+        if scale < -28 %all zeros
+            continue
+        end
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -75,7 +78,7 @@ for l = inlayers
                 mean_Y_sse = kern_Y_sse{l}(k,j,i);
                 mean_W_sse = kern_W_sse{l}(k,j,i);
                 disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e', ...
-                             archname, tranname, l, l_length, i, min(h*w*q,p*g), delta, mean_Y_sse, ...
+                             archname, tranname, l, l_length, i, p*g, delta, mean_Y_sse, ...
                              mean_W_sse, 100*mean(kern_Y_top{l}(k,j,i)), coded/(s*h*w*q)));
                 if (mean_Y_sse > last_Y_sse) && ...
                    (mean_W_sse > last_W_sse) || ...

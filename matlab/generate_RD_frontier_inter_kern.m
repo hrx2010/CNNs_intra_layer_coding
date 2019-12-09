@@ -33,11 +33,11 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 for j = 1:maxsteps
     slope = -48 + 0.50*(j-1);
-    ydist = cell(l_length,1);
-    coded = cell(l_length,1);
-    delta = cell(l_length,1);
-    wdist = cell(l_length,1);
-    denom = cell(l_length,1);
+    ydist_kern = cell(l_length,1);
+    coded_kern = cell(l_length,1);
+    delta_kern = cell(l_length,1);
+    wdist_kern = cell(l_length,1);
+    denom_kern = cell(l_length,1);
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
@@ -45,35 +45,37 @@ for j = 1:maxsteps
         basis_vectors = gettrans([tranname,'_5000_inter'],archname,l);
         quant_weights = reshape(permute(transform_inter(perm5(quants(l).Weights,quants(l)),basis_vectors(:,:,:,1)),...
                                         [1,2,3,5,4]),[h,w,p*g,q]);
-        [best_Y_sse,best_delta,best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
-        ydist{l} = lambda2points(best_coded,best_Y_sse,best_Y_sse,2^slope);
-        coded{l} = lambda2points(best_coded,best_Y_sse,best_coded,2^slope);
-        delta{l} = lambda2points(best_coded,best_Y_sse,best_delta,2^slope);
-        denom{l} = h*w*p*q*g;%ones(size(coded{l}))*(h*w*q);
+        [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
+        ydist_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_Y_sse,2^slope);
+        coded_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_coded,2^slope);
+        delta_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_delta,2^slope);
+        denom_kern{l} = h*w*p*q*g;%ones(size(coded{l}))*(h*w*q);
+
         s = strides(l);
-        for i = 1:s:p*g
-            rs = i:min(min(h*w*q,p*g),s+i-1);
+        for i = 1:s:p*g%min(h*w*q,p*g)
+            rs = i:min(p*q,s+i-1);
             % quantize for the given lambda
-            quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta{l}(i),coded{l}(i)/(s*h*w*q));
+            quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta_kern{l}(i),coded_kern{l}(i)/(s*h*w*q));
+
         end
         quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
-                                                  basis_vectors(:,:,:,2)),quants(l));
-        wdist{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
+                                              basis_vectors(:,:,:,2)),quants(l));
+        wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
     end
     ournet = replaceLayers(neural,quants);
 
-    ydist = cell2mat(ydist);
-    coded = cell2mat(coded);
-    delta = cell2mat(delta);
-    wdist = cell2mat(wdist);
-    denom = cell2mat(denom);
-    
+    ydist_kern = cell2mat(ydist_kern);
+    coded_kern = cell2mat(coded_kern);
+    delta_kern = cell2mat(delta_kern);
+    wdist_kern = cell2mat(wdist_kern);
+    denom_kern = cell2mat(denom_kern);
+
     [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
     hist_sum_Y_sse(j,1) = mean((Y_hats(:) - Y(:)).^2,1);
     hist_sum_Y_top(j,1) = mean(images.Labels == Y_cats);
-    pred_sum_Y_sse(j,1) = sum(ydist(:),'omitnan');
-    hist_sum_W_sse(j,1) = sum(wdist(:),'omitnan')/sum(denom(:),'omitnan');
-    hist_sum_coded(j,1) = sum(coded(:),'omitnan')/sum(denom(:),'omitnan');
+    pred_sum_Y_sse(j,1) = sum(ydist_kern(:),'omitnan');
+    hist_sum_W_sse(j,1) = sum(wdist_kern(:),'omitnan')/sum(denom_kern(:),'omitnan');
+    hist_sum_coded(j,1) = sum(coded_kern(:),'omitnan')/sum(denom_kern(:),'omitnan');
 
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
                  archname, tranname, slope, hist_sum_Y_sse(j,1), pred_sum_Y_sse(j,1), ...
@@ -83,5 +85,5 @@ for j = 1:maxsteps
     end
 end
 
-save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter_both',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
+save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter_total',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
      'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top');

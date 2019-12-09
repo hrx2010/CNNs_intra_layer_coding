@@ -31,7 +31,7 @@ hist_sum_W_sse = zeros(maxsteps,1)*NaN;
 [Y,Y_cats] = pred(neural,nclass,images,outlayer);
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
-for j = 51 %1:maxsteps
+for j = 1:maxsteps
     slope = -48 + 0.50*(j-1);
     ydist_kern = cell(l_length,1);
     coded_kern = cell(l_length,1);
