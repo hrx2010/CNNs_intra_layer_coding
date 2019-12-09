@@ -27,6 +27,7 @@ hist_sum_Y_sse = zeros(maxsteps,1)*NaN;
 pred_sum_Y_sse = zeros(maxsteps,1)*NaN;
 hist_sum_coded = zeros(maxsteps,1)*NaN;
 hist_sum_W_sse = zeros(maxsteps,1)*NaN;
+hist_sum_non0s = zeros(maxsteps,1)*NaN;
 
 [Y,Y_cats] = pred(neural,nclass,images,outlayer);
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
@@ -38,12 +39,14 @@ for j = 1:maxsteps
     delta_kern = cell(l_length,1);
     wdist_kern = cell(l_length,1);
     denom_kern = cell(l_length,1);
+    non0s_kern = cell(l_length,1);
 
     ydist_base = cell(l_length,1);
     coded_base = cell(l_length,1);
     delta_base = cell(l_length,1);
     wdist_base = cell(l_length,1);
     denom_base = cell(l_length,1);
+    non0s_base = cell(l_length,1);
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
@@ -73,6 +76,7 @@ for j = 1:maxsteps
         quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
                                               quant_vectors(:,:,:,2)),quants(l));
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
+        non0s_kern{l} = sum(squeeze(max(abs(quant_weights),[],4))>1e-7);
     end
     ournet = replaceLayers(neural,quants);
 
@@ -81,12 +85,14 @@ for j = 1:maxsteps
     delta_kern = cell2mat(delta_kern);
     wdist_kern = cell2mat(wdist_kern);
     denom_kern = cell2mat(denom_kern);
+    non0s_kern = cell2mat(non0s_kern);
 
     ydist_base = cell2mat(ydist_base);
     coded_base = cell2mat(coded_base);
     delta_base = cell2mat(delta_base);
     wdist_base = cell2mat(wdist_base);
     denom_base = cell2mat(denom_base);
+    non0s_base = cell2mat(non0s_base);
     
     [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
     hist_sum_Y_sse(j,1) = mean((Y_hats(:) - Y(:)).^2,1);
@@ -96,10 +102,12 @@ for j = 1:maxsteps
                         / (sum(denom_kern(:),'omitnan'));
     hist_sum_coded(j,1) = (sum(coded_kern(:),'omitnan') + sum(coded_base(:),'omitnan'))...
                         / (sum(denom_kern(:),'omitnan'));
+    hist_sum_non0s(j,1) = non0s_kern;
 
-    disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
+    disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e, non0: %4.1f',...
                  archname, tranname, slope, hist_sum_Y_sse(j,1), pred_sum_Y_sse(j,1), ...
-                 hist_sum_W_sse(j,1), 100*hist_sum_Y_top(j,1), hist_sum_coded(j,1)));
+                 hist_sum_W_sse(j,1), 100*hist_sum_Y_top(j,1), ...
+                 hist_sum_coded(j,1), 100*hist_sum_non0s(j,1)/min(h*w*q,p*g)));
     if hist_sum_coded(j) == 0
         break;
     end
