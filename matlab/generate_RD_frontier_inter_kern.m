@@ -11,13 +11,16 @@ labeldir = './ILSVRC2012_val.txt';
 maxsteps = 96;
 
 load(sprintf('%s_%s_val_100_%s_inter_kern',archname,tranname,outlayer));
-[neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
-[layers,lclass] = removeLastLayer(neural);
+load(sprintf('%s_cmeans_offset',archname));
 
-[cmeans,offset] = channelMeans(neural,images);
-layers = modifyConvLayers(layers,cmeans,offset);
+[neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
+Y = pred(neural,images,outlayer);
+Y_cats = getclass(neural,Y);
+
+disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
+
+layers = modifyConvLayers(neural,cmeans,offset);
 neural = assembleNetwork(layers);
-nclass = assembleNetwork(lclass);
 
 l_kernel = findconv(neural.Layers); % or specify the layer number directly
 l_length = length(l_kernel);
@@ -27,9 +30,9 @@ hist_sum_Y_sse = zeros(maxsteps,1)*NaN;
 pred_sum_Y_sse = zeros(maxsteps,1)*NaN;
 hist_sum_coded = zeros(maxsteps,1)*NaN;
 hist_sum_W_sse = zeros(maxsteps,1)*NaN;
-
-[Y,Y_cats] = pred(neural,nclass,images,outlayer);
-disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
+hist_sum_denom = zeros(maxsteps,l_length)*NaN;
+hist_sum_non0s = zeros(maxsteps,l_length)*NaN;
+hist_sum_total = zeros(maxsteps,l_length)*NaN;
 
 for j = 1:maxsteps
     slope = -48 + 0.50*(j-1);
@@ -38,6 +41,7 @@ for j = 1:maxsteps
     delta_kern = cell(l_length,1);
     wdist_kern = cell(l_length,1);
     denom_kern = cell(l_length,1);
+    non0s_kern = cell(l_length,1);
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
@@ -61,6 +65,8 @@ for j = 1:maxsteps
         quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
                                               basis_vectors(:,:,:,2)),quants(l));
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
+        non0s_kern{l} = sum(squeeze(max(abs(quant_weights),[],4))>1e-7);
+        coded_kern{l} = sum(coded_kern{l},'omitnan');
     end
     ournet = replaceLayers(neural,quants);
 
@@ -69,13 +75,19 @@ for j = 1:maxsteps
     delta_kern = cell2mat(delta_kern);
     wdist_kern = cell2mat(wdist_kern);
     denom_kern = cell2mat(denom_kern);
+    non0s_kern = cell2mat(non0s_kern);
 
-    [Y_hats,Y_cats] = pred(ournet,nclass,images,outlayer);
+    Y_hats = pred(ournet,images,outlayer);
+    Y_cats = getclass(neural,Y_hats);
+
     hist_sum_Y_sse(j,1) = mean((Y_hats(:) - Y(:)).^2,1);
     hist_sum_Y_top(j,1) = mean(images.Labels == Y_cats);
     pred_sum_Y_sse(j,1) = sum(ydist_kern(:),'omitnan');
     hist_sum_W_sse(j,1) = sum(wdist_kern(:),'omitnan')/sum(denom_kern(:),'omitnan');
     hist_sum_coded(j,1) = sum(coded_kern(:),'omitnan')/sum(denom_kern(:),'omitnan');
+    hist_sum_non0s(j,inlayers) = non0s_kern(:);
+    hist_sum_total(j,inlayers) = coded_kern(:);
+    hist_sum_denom(j,inlayers) = denom_kern(:);
 
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
                  archname, tranname, slope, hist_sum_Y_sse(j,1), pred_sum_Y_sse(j,1), ...
@@ -86,4 +98,5 @@ for j = 1:maxsteps
 end
 
 save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter_total',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
-     'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top');
+     'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top','hist_sum_non0s',...
+     'hist_sum_total','hist_sum_denom');

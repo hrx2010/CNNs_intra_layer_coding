@@ -1,11 +1,10 @@
 function img = read227x227(filename)
     img = imread(filename);
-    img = imresize(img,[227,227]);
+    img = imresize(img,[256,256]);
+    % newdim = ceil((227/min(h,w))*[h,w]);
+    offset = ceil(([256,256] - [227,227])/2);
+    img = img(offset(1)+(1:227),offset(2)+(1:227),:);
     [h,w,d] = size(img);
-    % newdim = floor((256/min(h,w))*[h,w]);
-    % offset = floor((newdim - 227)/2);
-    % img = imresize(img,newdim,'bilinear');
-    % img = img(offset(1)+(0:226),offset(2)+(0:226),:);
     if d == 1
         img = repmat(img,[1,1,3]);
     end

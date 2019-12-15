@@ -1,4 +1,4 @@
-function K = generate_KL_intra(archname,testsize,klttype)
+function T = generate_KL_intra(archname,testsize,klttype)
 %GENERATE_KL_INTER Generate KL transform for inter-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE,DIMTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
@@ -33,16 +33,14 @@ function K = generate_KL_intra(archname,testsize,klttype)
     l_kernel = findconv(neural.Layers); 
     l_length = length(l_kernel);
 
-    K = cell(l_length,1);
+    T = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
     for l = 1:l_length
         layer = layers(l);
-        [h,w,p,q,g] = size(layer.Weights);
-        K{l} = cell(p,g);
-        Kt{l} = cell(p,g);
-        invK{l} = cell(p,g);
-        invKt{l} = cell(p,g);
+        layer_weights = perm5(layer.Weights,layer);
+        [h,w,p,q,g] = size(layer_weights);
+        T{l} = zeros(h*w,h*w,p*g,2);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
 
         switch ndims(layer.Weights)
@@ -54,24 +52,27 @@ function K = generate_KL_intra(archname,testsize,klttype)
         % find two KLTs, each using the EVD
         for k = 1:g
             for j = 1:p
-                covH = covariances(double(layer.Weights(:,:,j,:,k)),dimtype);
                 switch klttype
                   case 'kkt'
-                    covX = correlation(double(X(:,:,(k-1)*p+j,:)),dimtype,h);
+                    covH = covariances(double(layer_weights(:,:,j,:,k)),1);
+                    covX = correlation(double(X(:,:,(k-1)*p+j,:)),1,h);
                   case 'klt'
-                    covX = eye(h*h);
+                    covH = covariances(double(layer_weights(:,:,j,:,k)),1);
+                    covX = eye(h*w);
+                  case 'idt'
+                    covH = eye(h*w);
+                    covX = eye(h*w);
                 end
-                invcovX = inv(covX+covX');
-                [V,~] = eig(covH+covH',invcovX+invcovX','chol');
+                invcovX = inv(covX+covX'+0.01*eye(h*w)*eigs(covX+covX',1));
+                [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
-                K{l}{j,k} = inv(invVt);
-                Kt{l}{j,k} = K{l}{j,k}';
-                invK{l}{j,k} = invVt;
-                invKt{l}{j,k} = K{l}{j,k}';
+                T{l}(:,:,(k-1)*p+j,1) = inv(invVt(:,end:-1:1));
+                T{l}(:,:,(k-1)*p+j,2) = invVt(:,end:-1:1);
             end        
         end
 
-        disp(sprintf('%s %s | generated %d-D transform for layer %03d', archname, klttype, dimtype, l));
+        disp(sprintf('%s %s | generated intra transform for layer %03d using %d images',...
+                     archname, klttype, l, testsize));
     end
-    save(sprintf('%s_%s_intra',archname,klttype,dimtype),'K','Kt','invK','invKt');
+    save(sprintf('%s_%s_%d_intra',archname,klttype,testsize),'-v7.3','T');
 end

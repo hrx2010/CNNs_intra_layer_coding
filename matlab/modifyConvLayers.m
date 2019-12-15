@@ -1,4 +1,10 @@
-function lgraph =  modifyConvLayers(lgraph,means,offset)
+function lgraph =  modifyConvLayers(neural,means,offset)
+    switch class(neural)
+      case 'SeriesNetwork'
+        lgraph = layerGraph(neural.Layers);
+      case 'DAGNetwork'
+        lgraph = layerGraph(neural);
+    end
     inlayers = lgraph.Layers;
     l_kernel = findconv(inlayers);
     l_length = length(l_kernel);

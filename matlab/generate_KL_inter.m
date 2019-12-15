@@ -40,7 +40,7 @@ function T = generate_KL_inter(archname,testsize,klttype)
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
         [h,w,p,q,g] = size(layer_weights);
-        T{l} = zeros(p,p,g,2);
+        T{l} = zeros(p,p,1*g,2);
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
 
         switch ndims(layer.Weights)

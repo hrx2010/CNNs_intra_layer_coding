@@ -16,6 +16,7 @@ function [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize)
         readerfun = @read224x224;
         neural = mobilenetv2;
     end
+
     labels = neural.Layers(end).Classes(textread(GetFullPath(labeldir)));
     images = imageDatastore(imagedir,'ReadFcn',readerfun,'Labels',labels);
     files = images.Files(1:testsize);
