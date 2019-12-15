@@ -1,44 +1,48 @@
-function T = gettrans(tranname,archname,layernum)
+function K = gettrans(tranname,archname,layernum)
     T = cell(2,1);
     switch tranname
-      case 'dct2_intra'
-        T{1} = @dct2;
-        T{2} = @idct2;
-        T{3} = @dct2;
-        T{4} = @idct2;
+      case 'dct'
+        K{1} = @dct2;
+        K{2} = @idct2;
+        K{3} = @dct2;
+        K{4} = @idct2;
       case 'dct2_2'
-        T{1} = @(x) dct2(x,[2,2]);
-        T{2} = @(x) idct2(x,[2,2]);
-        T{3} = @(x) dct2(x,[2,2]);
-        T{4} = @(x) idct2(x,[2,2]);
-      case 'dst2_intra'
-        T{1} = @dst2;
-        T{2} = @idst2;
-        T{3} = @dst2;
-        T{4} = @idst2;
-      case 'dst2_2'
-        T{1} = @(x) dst2(x,[2,2]);
-        T{2} = @(x) idst2(x,[2,2]);
-        T{3} = @(x) dst2(x,[2,2]);
-        T{4} = @(x) idst2(x,[2,2]);
-      case 'dft2_intra'
-        T{1} = @dft2;
-        T{2} = @idft2;
-        T{3} = @dft2;
-        T{4} = @idft2;
-      case 'idt2_intra'
-        T{1} = @idt2;
-        T{2} = @iidt2;
-        T{3} = @idt2;
-        T{4} = @iidt2;
-      case {'kkt1_intra','klt1_intra'}
-        load(sprintf('%s_%s',archname,tranname),'K','invK','invKt','Kt');
-        T{1} = K{layernum};
-        T{2} = invK{layernum};
-        T{3} = invKt{layernum};
-        T{4} = Kt{layernum};
+        K{1} = @(x) dct2(x,[2,2]);
+        K{2} = @(x) idct2(x,[2,2]);
+        K{3} = @(x) dct2(x,[2,2]);
+        K{4} = @(x) idct2(x,[2,2]);
+      case 'dst'
+        K{1} = @dst2;
+        K{2} = @idst2;
+        K{3} = @dst2;
+        K{4} = @idst2;
+      case 'dst'
+        K{1} = @(x) dst2(x,[2,2]);
+        K{2} = @(x) idst2(x,[2,2]);
+        K{3} = @(x) dst2(x,[2,2]);
+        K{4} = @(x) idst2(x,[2,2]);
+      case 'dft'
+        K{1} = @dft2;
+        K{2} = @idft2;
+        K{3} = @dft2;
+        K{4} = @idft2;
+      case 'idt'
+        K{1} = @idt2;
+        K{2} = @iidt2;
+        K{3} = @idt2;
+        K{4} = @iidt2;
+      case {'kkt_5000_intra','klt_5000_intra'}
+        load(sprintf('%s_%s',archname,tranname),'T');
+        K{1} = T{layernum}(:,:,:,1);
+        K{2} = T{layernum}(:,:,:,2);
+        K{3} = permute(T{layernum}(:,:,:,2),[2,1,3]);
+        K{4} = permute(T{layernum}(:,:,:,1),[2,1,3]);
       otherwise
         load(sprintf('%s_%s',archname,tranname),'T');
-        T = T{layernum};
+        p = size(T{layernum},1);
+        K{1} = T{layernum}(:,:,:,1); %reshape(T{layernum}(:,:,:,1),p,p,[]);
+        K{2} = T{layernum}(:,:,:,2); %reshape(T{layernum}(:,:,:,2),p,p,[]);
+        K{3} = reshape(permute(reshape(T{layernum}(:,:,:,2),p,p,[]),[2,1,3]),p,[],1);
+        K{4} = reshape(permute(reshape(T{layernum}(:,:,:,1),p,p,[]),[2,1,3]),p,[],1);
     end
 end

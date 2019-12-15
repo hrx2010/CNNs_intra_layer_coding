@@ -6,7 +6,7 @@ function x = transform_intra(x,T)
         [h,w,p,q,g] = size(x);
         for j = 1:g
             for i = 1:p
-                x(:,:,i,:,j) = reshape(T{i,j}*reshape(x(:,:,i,:,j),h*w,q),h,w,1,q,1);
+                x(:,:,i,:,j) = reshape(T(:,:,(j-1)*p+i)*reshape(x(:,:,i,:,j),h*w,q),h,w,1,q,1);
             end
         end
     end
