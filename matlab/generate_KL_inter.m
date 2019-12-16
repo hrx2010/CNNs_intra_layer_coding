@@ -26,9 +26,6 @@ function T = generate_KL_inter(archname,testsize,klttype)
     labeldir = './ILSVRC2012_val.txt';
 
     [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
-    [layers,lclass] = removeLastLayer(neural);
-    neural = assembleNetwork(layers);
-    nclass = assembleNetwork(lclass);
 
     l_kernel = findconv(neural.Layers); 
     l_length = length(l_kernel);
@@ -36,26 +33,19 @@ function T = generate_KL_inter(archname,testsize,klttype)
     T = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
-    for l = 1:l_length
+    for l = 2:l_length
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
         [h,w,p,q,g] = size(layer_weights);
         T{l} = zeros(p,p,1*g,2);
-        X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-
-        switch ndims(layer.Weights)
-          case 2
-            X = reshape(X-mean(X,4),1,1,p,[]);
-          otherwise
-            X = X - mean(mean(mean(X,1),2),4);
-        end
+        [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,layer_weights);
 
         for k = 1:g
             for j = 1:1 % only one transform per group
                 switch klttype
                   case 'kkt'
                     covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
-                    covX = cov(reshape(permute(double(X(:,:,(k-1)*p+(1:p),:)),[3,1,2,4]),p,[])',1);
+                    covX = squeeze(X_vars(:,:,:,:,k));
                   case 'klt'
                     covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
                     covX = eye(p);
