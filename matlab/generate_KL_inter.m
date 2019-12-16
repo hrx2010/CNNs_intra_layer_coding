@@ -33,12 +33,18 @@ function T = generate_KL_inter(archname,testsize,klttype)
     T = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
-    for l = 2:l_length
+    for l = 14%2:l_length
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
-        [h,w,p,q,g] = size(layer_weights);
-        T{l} = zeros(p,p,1*g,2);
         [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,layer_weights);
+        [h,w,p,q,g] = size(layer_weights);
+        if p ~= size(X_mean,3)
+            h = sqrt(p/size(X_mean,3));
+            w = sqrt(p/size(X_mean,3));
+            p = size(X_mean,3);
+            layer_weights = reshape(layer_weights,[h,w,p,q,g]);
+        end
+        T{l} = zeros(p,p,1*g,2);
 
         for k = 1:g
             for j = 1:1 % only one transform per group
