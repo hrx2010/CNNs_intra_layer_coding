@@ -33,7 +33,7 @@ function T = generate_KL_inter(archname,testsize,klttype)
     T = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
-    for l = 14%2:l_length
+    for l = 1:l_length
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
         [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,layer_weights);
