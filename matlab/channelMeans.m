@@ -31,7 +31,7 @@ function [means,offset] = channelMeans(archname, testsize)
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
         [h,w,p,q,g] = size(layer_weights);
-        X_mean = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,layer_weights);
+        X_mean = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,p,g);
 
         if p ~= size(X_mean,1)
             X_mean = reshape(permute(repmat(X_mean,[1,1,1,p/size(X_mean,3)]),[1,2,4,3]),1,1,[]);
