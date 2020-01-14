@@ -1,12 +1,15 @@
-function [X_mean, X_vars] = predmean(neural,images,outlayer,layer_weights)
-    X_part = 250;
+function [X_mean, X_vars] = predmean(neural,images,outlayer,groups,inputs)
+    X_part = 10;
     X_size = length(images.Files);
     X_sets = ceil(X_size/X_part);
     X_mean = 0;
-    g = size(layer_weights,5);
     for i = 1:X_sets
-        X = activations(neural,images.partition(X_sets,i),outlayer,'MiniBatchSize',250);
+        X = activations(neural,images.partition(X_sets+1,i),outlayer,'MiniBatchSize',X_part);
         [h,w,p,~] = size(X);
+        h = h*sqrt(p/inputs);
+        w = w*sqrt(p/inputs);
+        p = inputs;
+        g = groups;
         X = reshape(X,h,w,p/g,g,[]) - 0.0000;
         X_mean = X_mean + sum(mean(mean(reshape(X,h,w,p/g,g,[]),1),2),5);
     end
@@ -14,8 +17,12 @@ function [X_mean, X_vars] = predmean(neural,images,outlayer,layer_weights)
 
     X_vars = 0;
     for i = 1:X_sets
-        X = activations(neural,images.partition(X_sets,i),outlayer,'MiniBatchSize',250);
+        X = activations(neural,images.partition(X_sets+1,i),outlayer,'MiniBatchSize',X_part);
         [h,w,p,~] = size(X);
+        h = h*sqrt(p/inputs);
+        w = w*sqrt(p/inputs);
+        p = inputs;
+        g = groups;
         X = reshape(X,h,w,p/g,g,[]) - X_mean;
         X_vars = X_vars + sum(mean(mean(reshape(X,h,w,p/g,1,g,[]).*reshape(X,h,w,1,p/g,g,[]),1),2),6);
     end

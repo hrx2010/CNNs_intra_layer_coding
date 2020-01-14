@@ -26,9 +26,6 @@ function T = generate_KL_intra(archname,testsize,klttype)
     labeldir = './ILSVRC2012_val.txt';
 
     [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
-    [layers,lclass] = removeLastLayer(neural);
-    neural = assembleNetwork(layers);
-    nclass = assembleNetwork(lclass);
 
     l_kernel = findconv(neural.Layers); 
     l_length = length(l_kernel);
@@ -38,24 +35,17 @@ function T = generate_KL_intra(archname,testsize,klttype)
 
     for l = 1:l_length
         layer = layers(l);
-        layer_weights = perm5(layer.Weights,layer);
+        X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
+        layer_weights = perm5(layer.Weights,layer,size(X,3));
         [h,w,p,q,g] = size(layer_weights);
         T{l} = zeros(h*w,h*w,p*g,2);
-        X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-
-        switch ndims(layer.Weights)
-          case 2
-            X = reshape(X-mean(X,4),1,1,p,[]);
-          otherwise
-            X = X - mean(mean(mean(X,1),2),4);
-        end
         % find two KLTs, each using the EVD
         for k = 1:g
             for j = 1:p
                 switch klttype
                   case 'kkt'
                     covH = covariances(double(layer_weights(:,:,j,:,k)),1);
-                    covX = correlation(double(X(:,:,(k-1)*p+j,:)),1,h);
+                    covX = eye(h*w);%correlation(double(X(:,:,(k-1)*p+j,:)),1,h);
                   case 'klt'
                     covH = covariances(double(layer_weights(:,:,j,:,k)),1);
                     covX = eye(h*w);

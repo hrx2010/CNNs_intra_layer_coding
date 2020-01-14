@@ -6,6 +6,9 @@ function [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize)
       case 'vgg16'
         readerfun = @read224x224;
         neural = vgg16;
+      case 'vgg16py'
+        readerfun = @read224x224py;
+        neural = vgg16py;
       case 'resnet50'
         readerfun = @read224x224;
         neural = resnet50;

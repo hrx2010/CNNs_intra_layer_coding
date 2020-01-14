@@ -1,4 +1,4 @@
-function [means,offset] = channelMeans(neural,images)
+function [means,offset] = channelMeans(archname, testsize)
 %GENERATE_KL_INTER Generate KL transform for inter-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE,DIMTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
@@ -15,6 +15,10 @@ function [means,offset] = channelMeans(neural,images)
 %   >>  K = generate_KL_intra('vgg16',2000,'kklt',1);
 %   produces a separable KKLT basis for vgg16 using 2000 test
 %   images. 
+
+    imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
+    labeldir = './ILSVRC2012_val.txt';
+    [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
       
     l_kernel = findconv(neural.Layers);
     l_length = length(l_kernel);
@@ -23,21 +27,20 @@ function [means,offset] = channelMeans(neural,images)
     offset = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
-    for l = 1:l_length
+    for l = 14:l_length
         layer = layers(l);
-        [h,w,p,q,g] = size(layer.Weights);
-        X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-        [H,W,P,S] = size(X);
-        switch ndims(layer.Weights)
-          case 2
-            means{l} = mean(X,4);
-            offset{l} = layer.Weights*means{l}(:);
-          otherwise
-            means{l} = mean(mean(mean(X,1),2),4);
-            offset{l} = zeros(1,1,q,g);
-            for k = 1:g
-                offset{l}(1,1,:,k) = squeeze(sum(sum(layer.Weights(:,:,:,:,k),1),2))'*squeeze(means{l}(1,1,(k-1)*p+(1:p)));
-            end
+        layer_weights = perm5(layer.Weights,layer);
+        [h,w,p,q,g] = size(layer_weights);
+        X_mean = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,layer_weights);
+
+        if p ~= size(X_mean,1)
+            X_mean = reshape(permute(repmat(X_mean,[1,1,1,p/size(X_mean,3)]),[1,2,4,3]),1,1,[]);
+        end
+
+        means{l} = X_mean;
+        offset{l} = zeros(1,1,q,g);
+        for k = 1:g
+            offset{l}(1,1,:,k) = squeeze(sum(sum(layer_weights(:,:,:,:,k),1),2))'*squeeze(means{l}(1,1,(k-1)*p+(1:p)));
         end
     end
 end

@@ -27,7 +27,7 @@ function T = generate_KL_inter(archname,testsize,klttype)
 
     [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 
-    l_kernel = findconv(neural.Layers); 
+    l_kernel = findconv(neural.Layers);
     l_length = length(l_kernel);
 
     T = cell(l_length,1);
@@ -36,14 +36,8 @@ function T = generate_KL_inter(archname,testsize,klttype)
     for l = 1:l_length
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
-        [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,layer_weights);
+        [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,size(layer_weights,5),size(layer_weights,3));
         [h,w,p,q,g] = size(layer_weights);
-        if p ~= size(X_mean,3)
-            h = sqrt(p/size(X_mean,3));
-            w = sqrt(p/size(X_mean,3));
-            p = size(X_mean,3);
-            layer_weights = reshape(layer_weights,[h,w,p,q,g]);
-        end
         T{l} = zeros(p,p,1*g,2);
 
         for k = 1:g

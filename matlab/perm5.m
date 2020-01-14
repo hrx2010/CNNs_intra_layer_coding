@@ -1,11 +1,17 @@
-function tensor = perm5(tensor,layer)
+function tensor = perm5(tensor,layer,inputs)
     if isa(layer,'nnet.cnn.layer.FullyConnectedLayerCustom') ...
            | isa(layer,'nnet.cnn.layer.FullyConnectedLayer')
         switch ndims(tensor)
           case 2
-            tensor = reshape(tensor',[1,1,size(tensor')]);
+            [q,p,w,h,g] = size(tensor);
+            % h = h * sqrt(p/inputs);
+            % w = w * sqrt(p/inputs);
+            % p = inputs;
+            tensor = reshape(tensor',[h,w,p,q,g]);
           otherwise 
-            tensor = squeeze(tensor)';
+            [h,w,p,q,g] = size(tensor);
+            tensor = reshape(tensor,h*w*p,q,g);
+            tensor = permute(tensor,[2,1,3]);
         end
     end
 end

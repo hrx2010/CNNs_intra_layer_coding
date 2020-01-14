@@ -31,17 +31,12 @@ function K = gettrans(tranname,archname,layernum)
         K{2} = @iidt2;
         K{3} = @idt2;
         K{4} = @iidt2;
-      case {'kkt_5000_intra','klt_5000_intra'}
-        load(sprintf('%s_%s',archname,tranname),'T');
-        K{1} = T{layernum}(:,:,:,1);
-        K{2} = T{layernum}(:,:,:,2);
-        K{3} = permute(T{layernum}(:,:,:,2),[2,1,3]);
-        K{4} = permute(T{layernum}(:,:,:,1),[2,1,3]);
       otherwise
         load(sprintf('%s_%s',archname,tranname),'T');
+        % K = T{layernum};
         p = size(T{layernum},1);
-        K{1} = T{layernum}(:,:,:,1); %reshape(T{layernum}(:,:,:,1),p,p,[]);
-        K{2} = T{layernum}(:,:,:,2); %reshape(T{layernum}(:,:,:,2),p,p,[]);
+        K{1} = T{layernum}(:,:,:,1);
+        K{2} = T{layernum}(:,:,:,2);
         K{3} = reshape(permute(reshape(T{layernum}(:,:,:,2),p,p,[]),[2,1,3]),p,[],1);
         K{4} = reshape(permute(reshape(T{layernum}(:,:,:,1),p,p,[]),[2,1,3]),p,[],1);
     end

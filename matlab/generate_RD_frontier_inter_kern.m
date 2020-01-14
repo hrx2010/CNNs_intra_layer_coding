@@ -9,8 +9,6 @@ imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
 
 maxsteps = 96;
-
-load(sprintf('%s_%s_val_100_%s_inter_kern',archname,tranname,outlayer));
 load(sprintf('%s_cmeans_offset',archname));
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
@@ -45,10 +43,11 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        [h,w,p,q,g] = size(perm5(quants(l).Weights,quants(l)));
-        basis_vectors = gettrans([tranname,'_5000_inter'],archname,l);
-        quant_weights = reshape(permute(transform_inter(perm5(quants(l).Weights,quants(l)),basis_vectors(:,:,:,1)),...
-                                        [1,2,3,5,4]),[h,w,p*g,q]);
+        load(sprintf('%s_%s_val_1000_%d_%d_%s_inter_kern',archname,tranname,l,l,outlayer));
+        basis_vectors = gettrans([tranname,'_50000_inter'],archname,l);
+        [h,w,p,q,g] = size(perm5(quants(l).Weights,quants(l),size(basis_vectors,1)));
+        quant_weights = reshape(permute(transform_inter(perm5(quants(l).Weights,quants(l),size(basis_vectors,1)),...
+                                                        basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
         [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
         ydist_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_Y_sse,2^slope);
         coded_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_coded,2^slope);
@@ -63,9 +62,9 @@ for j = 1:maxsteps
 
         end
         quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
-                                              basis_vectors(:,:,:,2)),quants(l));
+                                                  basis_vectors(:,:,:,2)),quants(l),size(basis_vectors,1));
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
-        non0s_kern{l} = sum(squeeze(max(abs(quant_weights),[],4))>1e-7);
+        non0s_kern{l} = sum(squeeze(max(max(max(abs(quant_weights),[],4),[],1),[],2))>1e-7);
         coded_kern{l} = sum(coded_kern{l},'omitnan');
     end
     ournet = replaceLayers(neural,quants);
