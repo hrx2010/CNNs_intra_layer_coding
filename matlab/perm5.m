@@ -4,9 +4,11 @@ function tensor = perm5(tensor,layer,inputs)
         switch ndims(tensor)
           case 2
             [q,p,w,h,g] = size(tensor);
-            % h = h * sqrt(p/inputs);
-            % w = w * sqrt(p/inputs);
-            % p = inputs;
+            if nargin == 3
+                h = h * sqrt(p/inputs);
+                w = w * sqrt(p/inputs);
+                p = inputs;
+            end
             tensor = reshape(tensor',[h,w,p,q,g]);
           otherwise 
             [h,w,p,q,g] = size(tensor);

@@ -33,11 +33,11 @@ function K = gettrans(tranname,archname,layernum)
         K{4} = @iidt2;
       otherwise
         load(sprintf('%s_%s',archname,tranname),'T');
-        % K = T{layernum};
-        p = size(T{layernum},1);
-        K{1} = T{layernum}(:,:,:,1);
-        K{2} = T{layernum}(:,:,:,2);
-        K{3} = reshape(permute(reshape(T{layernum}(:,:,:,2),p,p,[]),[2,1,3]),p,[],1);
-        K{4} = reshape(permute(reshape(T{layernum}(:,:,:,1),p,p,[]),[2,1,3]),p,[],1);
+        K = T{layernum};
+        % p = size(T{layernum},1);
+        % K{1} = T{layernum}(:,:,:,1);
+        % K{2} = T{layernum}(:,:,:,2);
+        % K{3} = reshape(permute(reshape(T{layernum}(:,:,:,2),p,p,[]),[2,1,3]),p,[],1);
+        % K{4} = reshape(permute(reshape(T{layernum}(:,:,:,1),p,p,[]),[2,1,3]),p,[],1);
     end
 end

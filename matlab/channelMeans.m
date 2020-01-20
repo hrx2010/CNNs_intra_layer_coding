@@ -27,7 +27,7 @@ function [means,offset] = channelMeans(archname, testsize)
     offset = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
-    for l = 14:l_length
+    for l = 1:l_length
         layer = layers(l);
         layer_weights = perm5(layer.Weights,layer);
         [h,w,p,q,g] = size(layer_weights);

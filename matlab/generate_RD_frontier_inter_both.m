@@ -33,7 +33,7 @@ hist_sum_non0s = zeros(maxsteps,l_length)*NaN;
 hist_sum_total = zeros(maxsteps,l_length)*NaN;
 
 for j = 1:maxsteps
-    slope = -48 + 0.50*(j-1);
+    slope = -32 + 0.50*(j-1);
     ydist_kern = cell(l_length,1);
     coded_kern = cell(l_length,1);
     delta_kern = cell(l_length,1);
@@ -69,8 +69,12 @@ for j = 1:maxsteps
         denom_base{l} = 1*1*p*p*g;
 
         s = strides(l);
-        for i = 1:s:min(h*w*q,p*g)
-            rs = i:min(min(h*w*q,p*g),s+i-1);
+        for i = 1:s:1*1*p*g
+            rs = i:min(1*1*p*g,s+i-1);
+            scale = floor(log2(sqrt(mean(reshape(quant_weights(:,:,rs,:),[],1).^2))));
+            if scale < -25 %all zeros
+                continue
+            end
             % quantize for the given lambda
             quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta_kern{l}(i),coded_kern{l}(i)/(s*h*w*q));
             quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(s*1*1*p));
@@ -114,7 +118,8 @@ for j = 1:maxsteps
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
                  archname, tranname, slope, hist_sum_Y_sse(j,1), pred_sum_Y_sse(j,1), ...
                  hist_sum_W_sse(j,1), 100*hist_sum_Y_top(j,1), hist_sum_coded(j,1)));
-    if hist_sum_coded(j) == 0
+    if hist_sum_coded(j) == 0 || ...
+       hist_sum_Y_top(j) <= 0.002
         break;
     end
 end

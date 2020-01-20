@@ -1,21 +1,21 @@
-function K = generate_KL_fully(archname,testsize,klttype)
-%GENERATE_KL_FULLY Generate KL transform for fully-connected layers.
-%   K = GENERATE_KL_FULLY(ARCHNAME,TESTSIZE,KLTTYPE)
+function T = generate_KL_fully(archname,testsize,klttype)
+%GENERATE_KL_INTER Generate KL transform for intra-kernel coding.
+%   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
 %   architecture ARCHNAME based on TESTSIZE-many images. KLTTYPE
 %   can be set to either 'kklt' (default) or 'klt' (not
 %   recommended).
 %
 %   Examples:
-%   >>  K = generate_KL_fully('alexnet',1000,'kklt');
+%   >>  K = generate_KL_inter('alexnet',1000,'kklt');
 %   produces a KKLT basis for alexnet using 1000 test images. 
 %
-%   >>  K = generate_KL_fully('vgg16',2000,'kklt');
+%   >>  K = generate_KL_inter('vgg16',2000,'kklt');
 %   produces a  KKLT basis for vgg16 using 2000 test  images. 
 
 
 
-    
+
 
 
     if nargin < 3
@@ -26,42 +26,43 @@ function K = generate_KL_fully(archname,testsize,klttype)
     labeldir = './ILSVRC2012_val.txt';
 
     [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
-    [layers,lclass] = removeLastLayer(neural);
-    neural = assembleNetwork(layers);
-    nclass = assembleNetwork(lclass);
 
-    l_kernel = findconv(neural.Layers,{'full'}); 
+    l_kernel = findconv(neural.Layers);
     l_length = length(l_kernel);
 
-    K = cell(l_length,1);
+    T = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
     for l = 1:l_length
         layer = layers(l);
-        [q,p] = size(layer.Weights);
-        K{l} = cell(1,1);
-        X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
-        X = X - mean(X,4); % subtract per-channel means % X = getx(neural,nclass,images,layer.Name);
-        
-        covH = cov(double(layer.Weights),1);
-        % find two KLTs, each using the EVD
-        switch klttype
-          case 'kkt'
-            covX = cov(reshape(double(X),p,[])',1);
-          case 'klt'
-            covX = eye(p);
+        layer_weights = perm5(layer.Weights,layer);
+        [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,size(layer_weights,5),size(layer_weights,3));
+        [h,w,p,q,g] = size(layer_weights);
+        T{l} = zeros(p,p,1*g,2);
+
+        for k = 1:g
+            for j = 1:1 % only one transform per group
+                switch klttype
+                  case 'kkt'
+                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
+                    covX = squeeze(X_vars(:,:,:,:,k));
+                  case 'klt'
+                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
+                    covX = eye(p);
+                  case 'idt'
+                    covH = eye(p);
+                    covX = eye(p);
+                end
+                invcovX = inv(covX+covX'+0.01*eye(p)*eigs(covX+covX',1));
+                [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
+                invVt = inv(V')./sqrt(sum(inv(V').^2));
+                T{l}(:,:,k,1) = inv(invVt(:,end:-1:1));
+                T{l}(:,:,k,2) = invVt(:,end:-1:1);
+            end
         end
-        lambdaX = eigs(covX + covX',1) * 1e-6 * eye(p);
-        invcovX = inv(covX + covX' + lambdaX);
-        [V,D] = eig(covH+covH',invcovX+invcovX','chol');
-
-        [d,I] = sort(diag(D));
-        V = V(:,I);
-        D = diag(d);
-        
-        K{l}{1} = V';
-
-        disp(sprintf('%s %s | generated transform for layer %03d/%03d', archname, klttype, l, l_length));
+        T{l} = reshape(T{l},[p,p*g,1,2]);
+        disp(sprintf('%s %s | generated inter transform for layer %03d using %d images',...
+                     archname, klttype, l, testsize));
     end        
-    save(sprintf('%s_%s_fully',archname,klttype),'K');
+    save(sprintf('%s_%s_%d_fully',archname,klttype,testsize),'-v7.3','T');
 end

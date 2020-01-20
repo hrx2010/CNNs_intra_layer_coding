@@ -33,18 +33,18 @@ kern_Y_top = cell(l_length,1);
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    basis_vectors = gettrans([tranname,'_50000_inter'],archname,l);
+    basis_vectors = gettrans([tranname,'_50000_joint'],archname,l);
     [h,w,p,q,g] = size(perm5(layers(l).Weights,layers(l),size(basis_vectors,1)));
     layer_weights = reshape(permute(transform_inter(perm5(layers(l).Weights,layers(l),size(basis_vectors,1)),...
-                                                    basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
-    kern_delta{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    kern_coded{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    kern_W_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    kern_Y_sse{l} = zeros(maxrates,maxsteps,p*g)*NaN;
-    kern_Y_top{l} = zeros(maxrates,maxsteps,p*g)*NaN;
+                                                    basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,1*1*p*g,q]);
+    kern_delta{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
+    kern_coded{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
+    kern_W_sse{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
+    kern_Y_sse{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
+    kern_Y_top{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
     s = strides(l);
-    for i = 1:s:p*g % iterate over the frequency bands
-        rs = i:min(p*g,s+i-1);
+    for i = 1:s:1*1*p*g % iterate over the frequency bands
+        rs = i:min(1*1*p*g,s+i-1);
         scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
         if scale < -28 %all zeros
             continue
