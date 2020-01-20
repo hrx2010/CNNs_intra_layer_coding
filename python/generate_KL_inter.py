@@ -14,7 +14,7 @@ import numpy as np
 imp.reload(findconv)
 
 arch = 'alexnet'
-dims = scipy.io.loadmat(arch+'_dim.mat')['dim'][0]
+#dims = scipy.io.loadmat(arch+'_dim.mat')['dim'][0]
 
 rgb_avg = [0.485, 0.456, 0.406]
 rgb_std = [0.229, 0.224, 0.225]
@@ -32,7 +32,7 @@ dataset.samples = dataset.samples[testsize*gpuid+0:testsize*gpuid+testsize]
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=10)
 
 device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
-net = torchvision.models.alexnet(pretrained=True)
+net = torchvision.models.resnet50(pretrained=True)
 layers = findconv.findconv(net)
 
 net.to(device)
