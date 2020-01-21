@@ -33,7 +33,7 @@ kern_Y_top = cell(l_length,1);
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    basis_vectors = gettrans([tranname,'_50000_joint'],archname,l);
+    basis_vectors = gettrans([tranname,'_50000_inter'],archname,l);
     [h,w,p,q,g] = size(perm5(layers(l).Weights,layers(l),size(basis_vectors,1)));
     layer_weights = reshape(permute(transform_inter(perm5(layers(l).Weights,layers(l),size(basis_vectors,1)),...
                                                     basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,1*1*p*g,q]);
