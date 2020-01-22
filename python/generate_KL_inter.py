@@ -26,13 +26,13 @@ transdata = transforms.Compose(
      transforms.Normalize(rgb_avg, rgb_std)])
 
 gpuid = int(sys.argv[1])
-testsize = 2500
+testsize = 12500
 dataset = torchvision.datasets.ImageNet(root='/media/data2/seany/ILSVRC2012_devkit_t12',split='val',transform=transdata)
 dataset.samples = dataset.samples[testsize*gpuid+0:testsize*gpuid+testsize]
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=10)
 
 device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
-net = torchvision.models.resnet50(pretrained=True)
+net = torchvision.models.alexnet(pretrained=True)
 layers = findconv.findconv(net)
 
 net.to(device)
@@ -50,6 +50,7 @@ for x, y in dataloader:
     y_hat = y_hat/torch.sum(y_hat)
     
     for i in range(0,y_hat.size(1)): #for each class
+        sec = time.time()
         for j in range(0,y_hat.size(0)): #for each image
             y_hat[j,i].backward(retain_graph=True) #for each layer
         for l in range(0,len(layers)):
@@ -57,6 +58,7 @@ for x, y in dataloader:
             avg[l] = avg[l] + grad.detach()
             cov[l] = cov[l] + grad.mm(grad.transpose(1,0)).detach()
             grad.zero_()
+        #print(time.time() - sec)
     iters += y_hat.size(0)
     print(iters)
 
