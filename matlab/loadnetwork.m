@@ -3,6 +3,9 @@ function [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize)
       case 'alexnet'
         readerfun = @read227x227;
         neural = alexnet;
+      case 'alexnetpy'
+        readerfun = @read224x224py;
+        neural = alexnetpy;
       case 'vgg16'
         readerfun = @read224x224;
         neural = vgg16;
