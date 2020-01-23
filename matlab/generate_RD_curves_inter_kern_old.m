@@ -9,7 +9,7 @@ imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
 % tranname = 'idt2';
 % testsize = 1024;
-maxsteps = 32;
+maxsteps = 48;
 maxrates = 17;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
@@ -51,7 +51,7 @@ for l = inlayers
         end
         scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
         coded = Inf;
-        offset = scale + 2;
+        offset = scale - 2;
         for k = 1:maxrates %number of bits
             B = k - 1;
             last_Y_sse = Inf;
@@ -77,22 +77,16 @@ for l = inlayers
                 kern_coded{l}(k,j,i) = coded;
                 mean_Y_sse = kern_Y_sse{l}(k,j,i);
                 mean_W_sse = kern_W_sse{l}(k,j,i);
-                if (mean_Y_sse > last_Y_sse) && ...
-                   (mean_W_sse > last_W_sse) || ...
-                   (B == 0)
+                disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e, time: %5.2fs', ...
+                             archname, tranname, l, l_length, i, p*g, delta, mean_Y_sse, mean_W_sse,...
+                             100*mean(kern_Y_top{l}(k,j,i)), coded/(s*h*w*q), sec));
+                if (B == 0)
                     [~,j] = min(kern_Y_sse{l}(k,:,i));
-                    delta = kern_delta{l}(k,j,i);
-                    offset = delta - 2;
-                    mean_Y_sse = kern_Y_sse{l}(k,j,i);
-                    mean_W_sse = kern_W_sse{l}(k,j,i);
-                    disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e, time: %5.2fs', ...
-                                 archname, tranname, l, l_length, i, p*g, delta, mean_Y_sse, mean_W_sse,...
-                                 100*mean(kern_Y_top{l}(k,j,i)), coded/(s*h*w*q), sec));
+                    %delta = kern_delta{l}(k,j,i);
                     break
                 end
-                last_Y_sse = mean_Y_sse;
-                last_W_sse = mean_W_sse;
             end
+            offset = offset - 1;
         end
     end
 end
