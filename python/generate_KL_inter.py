@@ -13,8 +13,13 @@ import numpy as np
 
 imp.reload(findconv)
 
-arch = 'alexnet'
+arch = sys.argv[1]#'alexnet'
 #dims = scipy.io.loadmat(arch+'_dim.mat')['dim'][0]
+
+if arch == 'alexnet':
+    net = torchvision.models.alexnet(pretrained=True)
+elif arch == 'resnet50':
+    net = torchvision.models.resnet50(pretrained=True)
 
 rgb_avg = [0.485, 0.456, 0.406]
 rgb_std = [0.229, 0.224, 0.225]
@@ -25,15 +30,22 @@ transdata = transforms.Compose(
      transforms.ToTensor(),
      transforms.Normalize(rgb_avg, rgb_std)])
 
-gpuid = int(sys.argv[1])
-testsize = 12500
+testsize = int(sys.argv[2])
+gpuid = int(sys.argv[3])
+device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
+if arch == 'alexnet':
+    net = torchvision.models.alexnet(pretrained=True)
+    batchsize = 10
+elif arch == 'resnet50':
+    net = torchvision.models.resnet50(pretrained=True)
+    batchsize = 1
+elif arch == 'mobilenetv2':
+    net = torchvision.models.mobilenet.mobilenet_v2(pretrained=True)
+    batchsize = 1
+layers = findconv.findconv(net)
+
 dataset = torchvision.datasets.ImageNet(root='/media/data2/seany/ILSVRC2012_devkit_t12',split='val',transform=transdata)
 dataset.samples = dataset.samples[testsize*gpuid+0:testsize*gpuid+testsize]
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=10)
-
-device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
-net = torchvision.models.alexnet(pretrained=True)
-layers = findconv.findconv(net)
 
 net.to(device)
 net.eval()
@@ -41,7 +53,11 @@ net.eval()
 avg = [torch.zeros(1).to(device)] * len(layers)
 cov = [torch.zeros(1).to(device)] * len(layers)
 
+print('%s | generating joint statistics for %03d layers using %d images' % (arch, len(layers), testsize));
+
+
 iters = 0
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=batchsize)
 for x, y in dataloader:
     # get the inputs; data is a list of [inputs, labels]
     x = x.to(device)
@@ -62,4 +78,8 @@ for x, y in dataloader:
     iters += y_hat.size(0)
     print(iters)
 
-scipy.io.savemat(arch + '_stats_' + str(gpuid) + '.mat',{'avg':avg,'cov':cov})
+for l in range(0,len(layers)):
+    avg[l] = avg[l].to('cpu').numpy()
+    cov[l] = cov[l].to('cpu').numpy()
+
+scipy.io.savemat('/media/data2/seany/' + arch + '_' + str(testsize) + '_' + str(gpuid) + '.mat',{'avg':avg,'cov':cov})

@@ -4,32 +4,46 @@ import torch.nn
 import torchvision.models as models
 
 def findconv(net):
-    if isinstance(net, models.resnet.ResNet):
-        layers = []
-        for layer in dir(net):
-            if isinstance(getattr(net,layer),torch.nn.Conv2d):
-                layers.append(getattr(net,layer))
-        for layer in dir(net):
-            if isinstance(getattr(net,layer),torch.nn.Sequential):
-                for i in range(0,len(getattr(net,layer))):
-                    for convs in dir(getattr(net,layer)[i]):
-                        #print(convs)
-                        if isinstance(getattr(getattr(net,layer)[i],convs),torch.nn.Conv2d):
-                            layers.append(getattr(getattr(net,layer)[i],convs))
-        for layer in dir(net):
-            if isinstance(getattr(net,layer),torch.nn.Linear):
-                layers.append(getattr(net,layer))
-        return layers                        
-    else:
-        layers = []
-        for l in range(0,len(net.features)):
-            if isinstance(net.features[l], torch.nn.Conv2d):
-                layers.append(net.features[l])
-                
-        for l in range(0,len(net.classifier)):
-            if isinstance(net.classifier[l], torch.nn.Linear):
-                layers.append(net.classifier[l])
-        return layers            
+        layers = pushconv([],net)
+        return layers
+
+def pushconv(layers,container):
+    if isinstance(container, models.resnet.ResNet):
+        pushconv(layers,container.conv1)
+        pushconv(layers,container.layer1)
+        pushconv(layers,container.layer2)
+        pushconv(layers,container.layer3)
+        pushconv(layers,container.layer4)
+        pushconv(layers,container.fc)
+    elif isinstance(container, models.mobilenet.MobileNetV2):
+        pushconv(layers,container.features)
+        pushconv(layers,container.classifier)
+    elif isinstance(container, models.AlexNet):
+        pushconv(layers,container.features)
+        pushconv(layers,container.classifier)
+    elif isinstance(container, torch.nn.Linear):
+        layers.append(container)
+    elif isinstance(container, torch.nn.Conv2d):
+        layers.append(container)
+    elif isinstance(container, models.resnet.Bottleneck):
+        pushconv(layers,container.conv1)
+        pushconv(layers,container.conv2)
+        pushconv(layers,container.conv3)
+        if hasattr(container,'downsample'):
+            pushconv(layers,container.downsample)
+    elif isinstance(container, torch.nn.modules.batchnorm.BatchNorm2d):
+        layers.append(container)
+    elif isinstance(container,torch.nn.Sequential):
+        for l in range(0,len(container)):
+            pushconv(layers,container[l])
+    elif isinstance(container, models.mobilenet.ConvBNReLU):
+        for l in range(0,len(container.conv)):
+            pushconv(layers,container.conv[l])
+    elif isinstance(container, models.mobilenet.InvertedResidual):
+        for l in range(0,len(container.conv)):
+            pushconv(layers,container.conv[l])
+
+    return layers
 
 def permute(layer,dimen):
     if isinstance(layer, torch.nn.Conv2d):
