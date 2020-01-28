@@ -5,7 +5,7 @@ function img = read224x224py(filename)
     img = im2single(imread(filename));
     [h,w,d] = size(img);
     newdim = floor((256/min(h,w))*[h,w]);
-    img = imresize(img,newdim,'lanczos3','Antialiasing',false);
+    img = imresize(img,newdim,'bilinear');%,'lanczos3','Antialiasing',false);
     offset = ceil((newdim - [224,224])/2);
     img = img(offset(1)+(1:224),offset(2)+(1:224),:);
     if d == 1

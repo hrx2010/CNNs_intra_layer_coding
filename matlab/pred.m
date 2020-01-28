@@ -1,6 +1,6 @@
 function Y_hat = pred(neural,images,outlayer,batch)
     if nargin < 4
-        batch = 100;
+        batch = 25;
     end
     if strcmp('output',outlayer)
         outlayer = neural.Layers(end - 2).Name;
