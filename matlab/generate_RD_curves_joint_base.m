@@ -15,6 +15,7 @@ maxrates = 17;
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 Y = pred(neural,images,outlayer);
 Y_cats = getclass(neural,Y);
+Y = exp(Y)./sum(exp(Y));  
 
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
@@ -61,8 +62,11 @@ for l = inlayers
                 quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = perm5(transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
-                                                      quant_vectors(:,:,:,2)),quant,size(quant_vectors,1));
+                delta_vectors = reshape(quant_vectors(:,rs,:,2) - basis_vectors(:,rs,:,2),[],s); 
+                quant.Weights = perm5(permute(reshape(delta_vectors*reshape(layer_weights(:,:,rs,:),s,[]),...
+                                     [h,w,p,g,q]),[1,2,3,5,4]),quant,size(basis_vectors,1))+quant.Weights;         
+                % quant.Weights = perm5(transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+                %                                       quant_vectors(:,:,:,2)),quant,size(quant_vectors,1));
                 coded = B*(s*1*1*p);
                 base_delta{l}(k,j,i) = delta;
                 base_coded{l}(k,j,i) = coded;
@@ -75,13 +79,17 @@ for l = inlayers
             quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
             % assemble the net using layers
             quant = layers(l);
-            quant.Weights = perm5(transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
-                                                  quant_vectors(:,:,:,2)),quant,size(quant_vectors,1));
+            delta_vectors = reshape(quant_vectors(:,rs,:,2) - basis_vectors(:,rs,:,2),[],s); 
+            quant.Weights = perm5(permute(reshape(delta_vectors*reshape(layer_weights(:,:,rs,:),s,[]),...
+                                 [h,w,p,g,q]),[1,2,3,5,4]),quant,size(basis_vectors,1))+quant.Weights;         
+            % quant.Weights = perm5(transform_inter(permute(reshape(layer_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+            %                                       quant_vectors(:,:,:,2)),quant,size(quant_vectors,1));
             offset = delta - 2;
 
             ournet = replaceLayers(neural,quant);
             tic; Y_hats = pred(ournet,images,outlayer); sec = toc;
             Y_cats = getclass(neural,Y_hats);
+            Y_hats = exp(Y_hats)./sum(exp(Y_hats));  
             base_Y_sse{l}(k,j,i) = mean((Y_hats(:) - Y(:)).^2);
             base_Y_top{l}(k,j,i) = mean(images.Labels == Y_cats);
             mean_Y_sse = base_Y_sse{l}(k,j,i);

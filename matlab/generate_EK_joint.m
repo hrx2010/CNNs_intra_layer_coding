@@ -19,7 +19,7 @@ function T = generate_EK_joint(archname,testsize,klttype)
 
 
     if nargin < 3
-        klttype = 'kkt';
+        klttype = 'ekt';
     end
 
     imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
@@ -44,7 +44,7 @@ function T = generate_EK_joint(archname,testsize,klttype)
         for k = 1:g
             for j = 1:1 % only one transform per group
                 switch klttype
-                  case 'kkt'
+                  case 'ekt'
                     covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[1,2,3,4]),h*w*p,[])',1);
                     covX = pycovs{l};
                   case 'klt'

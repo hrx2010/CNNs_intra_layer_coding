@@ -1,8 +1,12 @@
 function [X_mean, X_vars] = predmean(neural,images,outlayer,groups,inputs)
-    X_part = 50;
+    X_part = 25;
     X_size = length(images.Files);
     X_sets = ceil(X_size/X_part);
     X_mean = 0;
+
+    if nargout < 1
+        return
+    end
     for i = 1:X_sets
         X = activations(neural,images.partition(X_sets+1,i),outlayer,'MiniBatchSize',X_part);
         [h,w,p,~] = size(X);
@@ -16,6 +20,10 @@ function [X_mean, X_vars] = predmean(neural,images,outlayer,groups,inputs)
     X_mean = double(X_mean) * (1/X_size);
 
     X_vars = 0;
+
+    if nargout < 2
+        return
+    end
     for i = 1:X_sets
         X = activations(neural,images.partition(X_sets+1,i),outlayer,'MiniBatchSize',X_part);
         [h,w,p,~] = size(X);

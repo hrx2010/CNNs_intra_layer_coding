@@ -42,6 +42,8 @@ function [means,offset] = channelMeans(archname, testsize)
         for k = 1:g
             offset{l}(1,1,:,k) = squeeze(sum(sum(layer_weights(:,:,:,:,k),1),2))'*squeeze(means{l}(1,1,(k-1)*p+(1:p)));
         end
+        disp(sprintf('%s | generated activation statistics for layer %03d using %d images',...
+                     archname, l, testsize));
     end
     save(sprintf('%s_cmeans_offset.mat',archname),'means','offset');
 end
