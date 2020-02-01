@@ -1,6 +1,6 @@
 function l = findconv(layers,types)
     if nargin < 2
-        types = {'conv','full'};
+        types = {'conv','full','norm'};
     end
     for i = 1:length(types)
         if ismember('full',types)
@@ -12,6 +12,9 @@ function l = findconv(layers,types)
             types{end+1} = 'nnet.cnn.layer.GroupedConvolution2DLayer';
             types{end+1} = 'nnet.cnn.layer.Convolution2DLayerCustom';
             types{end+1} = 'nnet.cnn.layer.GroupedConvolution2DLayerCustom';
+        end
+        if ismember('norm',types)
+            types{end+1} = 'nnet.cnn.layer.BatchNormalizationLayer';
         end
     end
 

@@ -10,6 +10,7 @@ def findconv(net,includenorm=True):
 def pushconv(layers,container,includenorm=True):
     if isinstance(container, models.resnet.ResNet):
         pushconv(layers,container.conv1,includenorm)
+        pushconv(layers,container.bn1,includenorm)
         pushconv(layers,container.layer1,includenorm)
         pushconv(layers,container.layer2,includenorm)
         pushconv(layers,container.layer3,includenorm)
@@ -27,10 +28,18 @@ def pushconv(layers,container,includenorm=True):
         layers.append(container)
     elif isinstance(container, models.resnet.Bottleneck):
         pushconv(layers,container.conv1,includenorm)
+        pushconv(layers,container.bn1,includenorm)
         pushconv(layers,container.conv2,includenorm)
+        pushconv(layers,container.bn2,includenorm)
         pushconv(layers,container.conv3,includenorm)
-        if hasattr(container,'downsample'):
-            pushconv(layers,container.downsample,includenorm)
+        if isinstance(container.downsample,torch.nn.Sequential):
+            pushconv(layers,container.downsample[0])
+        pushconv(layers,container.bn3)
+        if isinstance(container.downsample,torch.nn.Sequential):
+            pushconv(layers,container.downsample[1])
+        # if isinstance(container.downsample,torch.nn.Sequential):
+        #     pushconv(layers,container.downsample[0])
+        #     pushconv(layers,container.downsample[1])
     elif isinstance(container, torch.nn.modules.batchnorm.BatchNorm2d) and includenorm:
         layers.append(container)
     elif isinstance(container,torch.nn.Sequential):
