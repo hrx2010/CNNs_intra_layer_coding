@@ -3,45 +3,45 @@ import scipy.io as io
 import torch.nn
 import torchvision.models as models
 
-def findconv(net):
-        layers = pushconv([],net)
+def findconv(net,includenorm=True):
+        layers = pushconv([],net,includenorm)
         return layers
 
-def pushconv(layers,container):
+def pushconv(layers,container,includenorm=True):
     if isinstance(container, models.resnet.ResNet):
-        pushconv(layers,container.conv1)
-        pushconv(layers,container.layer1)
-        pushconv(layers,container.layer2)
-        pushconv(layers,container.layer3)
-        pushconv(layers,container.layer4)
-        pushconv(layers,container.fc)
+        pushconv(layers,container.conv1,includenorm)
+        pushconv(layers,container.layer1,includenorm)
+        pushconv(layers,container.layer2,includenorm)
+        pushconv(layers,container.layer3,includenorm)
+        pushconv(layers,container.layer4,includenorm)
+        pushconv(layers,container.fc,includenorm)
     elif isinstance(container, models.mobilenet.MobileNetV2):
-        pushconv(layers,container.features)
-        pushconv(layers,container.classifier)
+        pushconv(layers,container.features,includenorm)
+        pushconv(layers,container.classifier,includenorm)
     elif isinstance(container, models.AlexNet):
-        pushconv(layers,container.features)
-        pushconv(layers,container.classifier)
+        pushconv(layers,container.features,includenorm)
+        pushconv(layers,container.classifier,includenorm)
     elif isinstance(container, torch.nn.Linear):
         layers.append(container)
     elif isinstance(container, torch.nn.Conv2d):
         layers.append(container)
     elif isinstance(container, models.resnet.Bottleneck):
-        pushconv(layers,container.conv1)
-        pushconv(layers,container.conv2)
-        pushconv(layers,container.conv3)
+        pushconv(layers,container.conv1,includenorm)
+        pushconv(layers,container.conv2,includenorm)
+        pushconv(layers,container.conv3,includenorm)
         if hasattr(container,'downsample'):
-            pushconv(layers,container.downsample)
-    elif isinstance(container, torch.nn.modules.batchnorm.BatchNorm2d):
+            pushconv(layers,container.downsample,includenorm)
+    elif isinstance(container, torch.nn.modules.batchnorm.BatchNorm2d) and includenorm:
         layers.append(container)
     elif isinstance(container,torch.nn.Sequential):
         for l in range(0,len(container)):
-            pushconv(layers,container[l])
+            pushconv(layers,container[l],includenorm)
     elif isinstance(container, models.mobilenet.ConvBNReLU):
         for l in range(0,len(container.conv)):
-            pushconv(layers,container.conv[l])
+            pushconv(layers,container.conv[l],includenorm)
     elif isinstance(container, models.mobilenet.InvertedResidual):
         for l in range(0,len(container.conv)):
-            pushconv(layers,container.conv[l])
+            pushconv(layers,container.conv[l],includenorm)
 
     return layers
 
