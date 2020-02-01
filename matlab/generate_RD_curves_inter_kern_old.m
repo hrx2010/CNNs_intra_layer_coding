@@ -9,16 +9,16 @@ imagedir = '~/Developer/ILSVRC2012_val/*.JPEG';
 labeldir = './ILSVRC2012_val.txt';
 % tranname = 'idt2';
 % testsize = 1024;
-maxsteps = 48;
-maxrates = 17;
+maxsteps = 32;
+maxrates = 9;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 Y = pred(neural,images,outlayer);
 Y_cats = getclass(neural,Y);
-
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
-load(sprintf('%s_cmeans_offset',archname));
+load(sprintf('%s_cmeans_offset',archname)); 
+%cmeans = cell(8,1);%{6}(:) = 0; %offset{6}(:) = 0;%cell(8,1);
 layers = modifyConvLayers(neural,cmeans,offset);
 neural = assembleNetwork(layers);
 

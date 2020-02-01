@@ -6,8 +6,8 @@ close all;
 %[XTrain, YTrain] = digitTrain4DArrayData;
 
 img = imread('./stanford.bmp');
-img = (img(:,:,1)>210 & img(:,:,2)>210 & img(:,:,3)>210);
-Y = reshape(reshape(categorical(img),1,1,1,[]),[],1);
+img = single(img(:,17:340,1)>210 & img(:,17:340,2)>210 & img(:,17:340,3)>210);
+YTrain = reshape(reshape(categorical(img),1,1,1,[]),[],1);
 
 [X1, X2] = meshgrid(1:size(img,2),1:size(img,1));
 X = reshape([X1(:)';X2(:)'],2,1,1,[]);
