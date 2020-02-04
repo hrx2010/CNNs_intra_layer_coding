@@ -1,4 +1,4 @@
-function generate_RD_curves_inter_kern(archname,tranname,testsize,inlayers,outlayer,strides)
+function generate_RD_curves_exter_kern(archname,tranname,testsize,inlayers,outlayer,strides)
 
 % Choose one of: 'alexnet', 'vgg16', 'densenet201', 'mobilenetv2' and
 % 'resnet50', and specify the filepath for ILSVRC test images. Number
@@ -34,11 +34,10 @@ kern_Y_top = cell(l_length,1);
 
 layers = neural.Layers(l_kernel);
 for l = inlayers
-    basis_vectors = gettrans([tranname,'_50000_inter'],archname,l);
-    layer_weights = layers(l).Weights;
-    [h,w,p,q,g] = size(layer_weights);
-    layer_weights = reshape(basis_vectors(:,:,:,1)*reshape(permute(layer_weights,[3,5,4,1,2]),p*g,q*h*w),p*g,q*h*w);
-
+    basis_vectors = gettrans([tranname,'_50000_exter'],archname,l);
+    [h,w,p,q,g] = size(perm5(layers(l).Weights,layers(l),size(basis_vectors,1)));
+    layer_weights = reshape(permute(transform_inter(perm5(layers(l).Weights,layers(l),size(basis_vectors,1)),...
+                                                    basis_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,1*1*p*g,q]);
     kern_delta{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
     kern_coded{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
     kern_W_sse{l} = zeros(maxrates,maxsteps,1*1*p*g)*NaN;
@@ -47,11 +46,11 @@ for l = inlayers
     s = strides(l);
     for i = 1:s:1*1*p*g % iterate over the frequency bands
         rs = i:min(1*1*p*g,s+i-1);
-        scale = floor(log2(sqrt(mean(reshape(layer_weights(rs,:,:,:),[],1).^2))));
+        scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
         if scale < -28 %all zeros
             continue
         end
-        scale = floor(log2(sqrt(mean(reshape(layer_weights(rs,:,:,:),[],1).^2))));
+        scale = floor(log2(sqrt(mean(reshape(layer_weights(:,:,rs,:),[],1).^2))));
         coded = Inf;
         offset = scale + 2;
         for k = 1:maxrates %number of bits
@@ -60,11 +59,12 @@ for l = inlayers
                 % quantize each of the q slices
                 delta = offset + 0.25*(j-1);
                 quant_weights = layer_weights;
-                quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta,B);
+                quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta,B);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = permute(reshape(basis_vectors(:,:,:,2)*quant_weights,[p,g,q,h,w]),[4,5,1,3,2]);
-                coded = B*(length(rs)*h*w*q);
+                quant.Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+                                                      basis_vectors(:,:,:,2)),quant,size(basis_vectors,1));
+                coded = B*(s*h*w*q);
                 kern_delta{l}(k,j,i) = delta;
                 kern_coded{l}(k,j,i) = coded;
                 kern_W_sse{l}(k,j,i) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
@@ -73,10 +73,11 @@ for l = inlayers
             [~,j] = min(kern_W_sse{l}(k,:,i));
             delta = kern_delta{l}(k,j,i);
             quant_weights = layer_weights;
-            quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta,B);
+            quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta,B);
             % assemble the net using layers
             quant = layers(l);
-            quant.Weights = permute(reshape(basis_vectors(:,:,:,2)*quant_weights,[p,g,q,h,w]),[4,5,1,3,2]);
+            quant.Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
+                                                  basis_vectors(:,:,:,2)),quant,size(basis_vectors,1));
             offset = delta - 2;
 
             ournet = replaceLayers(neural,quant);
@@ -89,9 +90,9 @@ for l = inlayers
             mean_W_sse = kern_W_sse{l}(k,j,i);
             disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e, time: %5.2fs', ...
                          archname, tranname, l, l_length, i, p*g, delta, mean_Y_sse, mean_W_sse,...
-                         100*mean(kern_Y_top{l}(k,j,i)), coded/(length(rs)*h*w*q), sec));
+                         100*mean(kern_Y_top{l}(k,j,i)), coded/(s*h*w*q), sec));
         end
     end
     save(sprintf('%s_%s_val_%d_%d_%d_%s_inter_kern',archname,tranname,testsize,l,l,outlayer),...
-         '-v7.3','kern_coded','kern_Y_sse','kern_Y_top','kern_delta','kern_W_sse','strides');
+         'kern_coded','kern_Y_sse','kern_Y_top','kern_delta','kern_W_sse','strides');
 end
