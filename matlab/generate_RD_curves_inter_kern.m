@@ -19,6 +19,7 @@ Y_cats = getclass(neural,Y);
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
 load(sprintf('%s_cmeans_offset',archname));
+load(sprintf('%s_dims',archname));
 layers = modifyConvLayers(neural,cmeans,offset);
 neural = assembleNetwork(layers);
 

@@ -13,7 +13,6 @@ function lgraph =  modifyConvParams(lgraph,weight,biases,bnorm_mean,bnorm_vars)
     l_length = length(l_kernel);
     
     for l = 1:l_length
-        disp(l);
         oldlayer = inlayers(l_kernel(l));
         newlayer = oldlayer;
         switch class(oldlayer)

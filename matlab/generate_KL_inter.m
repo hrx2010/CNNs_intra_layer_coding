@@ -38,20 +38,20 @@ function T = generate_KL_inter(archname,testsize,klttype)
         layer_weights = perm5(layer.Weights,layer);
         [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,size(layer_weights,5),size(layer_weights,3));
         [h,w,p,q,g] = size(layer_weights);
-        T{l} = zeros(p,p,1*g,2);
+        T{l} = zeros(p*g,p*g,1,2);
 
-        for k = 1:g
+        for k = 1:1
             for j = 1:1 % only one transform per group
                 switch klttype
                   case 'kkt'
-                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
-                    covX = squeeze(X_vars(:,:,:,:,k));
+                    covH = cov(reshape(permute(double(layer_weights),[3,5,1,2,4]),p*g,[])',1);
+                    covX = squeeze(X_vars);
                   case 'klt'
-                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[3,1,2,4]),p,[])',1);
-                    covX = eye(p);
+                    covH = cov(reshape(permute(double(layer_weights),[3,5,1,2,4]),p*g,[])',1);
+                    covX = eye(p*g);
                   case 'idt'
-                    covH = eye(p);
-                    covX = eye(p);
+                    covH = eye(p*g);
+                    covX = eye(p*g);
                 end
                 invcovX = inv(covX+covX'+0.01*eye(p)*eigs(covX+covX',1));
                 [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
@@ -60,7 +60,7 @@ function T = generate_KL_inter(archname,testsize,klttype)
                 T{l}(:,:,k,2) = invVt(:,end:-1:1);
             end
         end
-        T{l} = reshape(T{l},[p,p*g,1,2]);
+        T{l} = reshape(T{l},[p*g,p*g,1,2]);
         disp(sprintf('%s %s | generated inter transform for layer %03d using %d images',...
                      archname, klttype, l, testsize));
     end        

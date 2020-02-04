@@ -1,4 +1,4 @@
-function [means,offset] = channelMeans(archname, testsize)
+function [cmeans,offset] = channelMeans(archname, testsize)
 %GENERATE_KL_INTER Generate KL transform for inter-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE,DIMTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
@@ -23,7 +23,7 @@ function [means,offset] = channelMeans(archname, testsize)
     l_kernel = findconv(neural.Layers);
     l_length = length(l_kernel);
 
-    means = cell(l_length,1);
+    cmeans = cell(l_length,1);
     offset = cell(l_length,1);
     layers = neural.Layers(l_kernel);
 
@@ -37,13 +37,13 @@ function [means,offset] = channelMeans(archname, testsize)
             X_mean = reshape(permute(repmat(X_mean,[1,1,1,p/size(X_mean,3)]),[1,2,4,3]),1,1,[]);
         end
 
-        means{l} = X_mean;
+        cmeans{l} = X_mean;
         offset{l} = zeros(1,1,q,g);
         for k = 1:g
-            offset{l}(1,1,:,k) = squeeze(sum(sum(layer_weights(:,:,:,:,k),1),2))'*squeeze(means{l}(1,1,(k-1)*p+(1:p)));
+            offset{l}(1,1,:,k) = squeeze(sum(sum(layer_weights(:,:,:,:,k),1),2))'*squeeze(cmeans{l}(1,1,(k-1)*p+(1:p)));
         end
         disp(sprintf('%s | generated activation statistics for layer %03d using %d images',...
                      archname, l, testsize));
     end
-    save(sprintf('%s_cmeans_offset.mat',archname),'means','offset');
+    save(sprintf('%s_cmeans_offset.mat',archname),'cmeans','offset');
 end

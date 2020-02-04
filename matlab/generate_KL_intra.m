@@ -38,16 +38,16 @@ function T = generate_KL_intra(archname,testsize,klttype)
         X = activations(neural,images,neural.Layers(l_kernel(l)-1).Name);
         layer_weights = perm5(layer.Weights,layer,size(X,3));
         [h,w,p,q,g] = size(layer_weights);
-        T{l} = zeros(h*w,h*w,p*g,2);
+        T{l} = zeros(h*w,h*w,1,2);
         % find two KLTs, each using the EVD
-        for k = 1:g
-            for j = 1:p
+        for k = 1:1
+            for j = 1:1
                 switch klttype
                   case 'kkt'
-                    covH = covariances(double(layer_weights(:,:,j,:,k)),1);
+                    covH = covariances(double(layer_weights(:,:,:,:,:)),2);
                     covX = eye(h*w);%correlation(double(X(:,:,(k-1)*p+j,:)),1,h);
                   case 'klt'
-                    covH = covariances(double(layer_weights(:,:,j,:,k)),1);
+                    covH = covariances(double(layer_weights(:,:,:,:,:)),2);
                     covX = eye(h*w);
                   case 'idt'
                     covH = eye(h*w);
@@ -56,8 +56,8 @@ function T = generate_KL_intra(archname,testsize,klttype)
                 invcovX = inv(covX+covX'+0.01*eye(h*w)*eigs(covX+covX',1));
                 [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
-                T{l}(:,:,(k-1)*p+j,1) = inv(invVt(:,end:-1:1));
-                T{l}(:,:,(k-1)*p+j,2) = invVt(:,end:-1:1);
+                T{l}(:,:,1,1) = inv(invVt(:,end:-1:1));
+                T{l}(:,:,1,2) = invVt(:,end:-1:1);
             end        
         end
 
