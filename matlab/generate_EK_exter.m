@@ -1,4 +1,4 @@
-function T = generate_EK_joint(archname,testsize,klttype)
+function T = generate_EK_exter(archname,testsize,klttype)
 %GENERATE_KL_INTER Generate KL transform for intra-kernel coding.
 %   K = GENERATE_KL_INTRA(ARCHNAME,TESTSIZE,KLTTYPE)
 %   generates the Karhunen-Loeve transform K for neural network
@@ -32,38 +32,38 @@ function T = generate_EK_joint(archname,testsize,klttype)
 
     T = cell(l_length,1);
     layers = neural.Layers(l_kernel);
-    pycovs = loadstatpy(archname,layers,'joint');
+    pycovs = loadstatpy(archname,layers,'exter');
 
     for l = 1:l_length
         layer = layers(l);
         layer_weights = layer.Weights;
         
         [h,w,p,q,g] = size(layer_weights);
-        T{l} = zeros(h*w*p,h*w*p,1*g,2);
+        T{l} = zeros(q*1,q*1,1,2);
 
         for k = 1:g
             for j = 1:1 % only one transform per group
                 switch klttype
                   case 'ekt'
-                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[1,2,3,4]),h*w*p,[])',1);
+                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[4,3,1,2]),q,[])',1);
                     covX = pycovs{l};
                   case 'klt'
-                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[1,2,3,4]),h*w*p,[])',1);
-                    covX = eye(h*w*p);
+                    covH = cov(reshape(permute(double(layer_weights(:,:,:,:,k)),[4,3,1,2]),q,[])',1);
+                    covX = eye(q);
                   case 'idt'
-                    covH = eye(h*w*p);
-                    covX = eye(h*w*p);
+                    covH = eye(q);
+                    covX = eye(q);
                 end
-                invcovX = inv(covX+covX'+0.01*eye(h*w*p)*eigs(covX+covX',1));
+                invcovX = inv(covX+covX'+0.01*eye(q)*eigs(covX+covX',1));
                 [V,d] = eig(covH+covH',invcovX+invcovX','chol','vector');
                 invVt = inv(V')./sqrt(sum(inv(V').^2));
                 T{l}(:,:,k,1) = inv(invVt(:,end:-1:1));
                 T{l}(:,:,k,2) = invVt(:,end:-1:1);
             end
         end
-        T{l} = reshape(T{l},[h*w*p,h*w*p*g,1,2]);
-        disp(sprintf('%s %s | generated inter transform for layer %03d using %d images',...
+        T{l} = reshape(T{l},[q,q,1,2]);
+        disp(sprintf('%s %s | generated exter transform for layer %03d using %d images',...
                      archname, klttype, l, testsize));
     end        
-    save(sprintf('%s_%s_%d_joint',archname,klttype,testsize),'-v7.3','T');
+    save(sprintf('%s_%s_%d_exter',archname,klttype,testsize),'-v7.3','T');
 end

@@ -1,5 +1,5 @@
-function covX = loadstatpy(archname,layers)
-    files = dir([archname,'_joint_stats_*.mat']);
+function covX = loadstatpy(archname,layers,xform)
+    files = dir(sprintf('%s_%s_stats_*.mat',archname,xform));
     covX = cell(length(layers),1);
     %avgX = cell(length(layers),1);
 
@@ -17,16 +17,16 @@ function covX = loadstatpy(archname,layers)
     end
 
     for l = 1:length(layers)
-        sz = size(perm5(layers(l).Weights,layers(l)));
+        [h,w,p,q,g] = size(layers(l).Weights);
 
-        % for i = 1:size(avgX{l},2)
-        %     avgX{l}(:,i) = reshape(permute(reshape(avgX{l}(:,i),sz([3,1,2])),[2,3,1]),[],1);
-        % end
-        for i = 1:size(covX{l},2)
-            covX{l}(:,i) = reshape(permute(reshape(covX{l}(:,i),sz([3,1,2])),[2,3,1]),[],1);
-        end
-        for i = 1:size(covX{l},1)
-            covX{l}(i,:) = reshape(permute(reshape(covX{l}(i,:),sz([3,1,2])),[2,3,1]),[],1);
+        switch xform
+          case 'joint'
+            for i = 1:size(covX{l},2)
+                covX{l}(:,i) = reshape(permute(reshape(covX{l}(:,i),[p,h,w]),[2,3,1]),[],1);
+            end
+            for i = 1:size(covX{l},1)
+                covX{l}(i,:) = reshape(permute(reshape(covX{l}(i,:),[p,h,w]),[2,3,1]),[],1);
+            end
         end
     end
 end

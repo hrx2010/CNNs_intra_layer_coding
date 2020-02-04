@@ -41,7 +41,7 @@ if arch == 'alexnet':
     batchsize = 10
 elif arch == 'resnet50':
     net = torchvision.models.resnet50(pretrained=True)
-    batchsize = 10
+    batchsize = 1
 elif arch == 'mobilenetv2':
     net = torchvision.models.mobilenet.mobilenet_v2(pretrained=True)
     batchsize = 1
@@ -103,8 +103,6 @@ for x, y in dataloader:
             y_hat[j,i].backward(retain_graph=True) #for each layer
         for l in range(0,len(layers)):
             grad = layers[l].weight.grad.reshape(sz[l][0],sz[l][1],-1).permute(iperm).flatten(1).permute(itran)
-            if grad.size(0) == 1:
-                continue
             #avg[l] = avg[l] + grad.detach()
             cov[l] = cov[l] + grad.mm(grad.transpose(1,0)).detach()
             grad.zero_()

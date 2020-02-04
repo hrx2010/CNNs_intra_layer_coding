@@ -10,7 +10,7 @@ labeldir = './ILSVRC2012_val.txt';
 % tranname = 'idt2';
 % testsize = 1024;
 maxsteps = 16;
-maxrates = 1;
+maxrates = 17;
 
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 Y = pred(neural,images,outlayer);
