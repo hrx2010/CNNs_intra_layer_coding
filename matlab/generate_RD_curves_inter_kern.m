@@ -48,7 +48,7 @@ for l = inlayers
     for i = 1:s:1*1*p*g % iterate over the frequency bands
         rs = i:min(1*1*p*g,s+i-1);
         scale = floor(log2(sqrt(mean(reshape(layer_weights(rs,:,:,:),[],1).^2))));
-        if scale < -28 %all zeros
+        if scale < -24 %all zeros
             continue
         end
         scale = floor(log2(sqrt(mean(reshape(layer_weights(rs,:,:,:),[],1).^2))));

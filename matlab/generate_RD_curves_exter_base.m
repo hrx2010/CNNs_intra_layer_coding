@@ -34,7 +34,7 @@ base_Y_top = cell(l_length,1);
 layers = neural.Layers(l_kernel);
 for l = inlayers
     basis_vectors = gettrans([tranname,'_50000_exter'],archname,l);
-    layer_weights = layers(l).Weights;%perm5(layers(l).Weights,layers(l),size(basis_vectors));
+    layer_weights = layers(l).Weights;
     [h,w,p,q,g] = size(layer_weights);
     layer_weights = reshape(basis_vectors(:,:,:,1)*reshape(permute(layer_weights,[4,3,5,1,2]),q,p*g*h*w),q,p*g*h*w);
 
@@ -62,8 +62,9 @@ for l = inlayers
                 quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
                 % assemble the net using layers
                 quant = layers(l);
+
                 quant.Weights = permute(reshape(quant_vectors(:,:,:,2)*layer_weights,[q,p,g,h,w]),[4,5,2,1,3]);
-                coded = B*(s*1*q*1);
+                coded = B*(length(rs)*1*q*1);
                 base_delta{l}(k,j,i) = delta;
                 base_coded{l}(k,j,i) = coded;
                 base_W_sse{l}(k,j,i) = mean((quant.Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2);
@@ -88,7 +89,7 @@ for l = inlayers
             mean_W_sse = base_W_sse{l}(k,j,i);
             disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, scale: %+6.2f, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %5.2f, rate: %2.0f, time: %5.2fs', ...
                          archname, tranname, l, l_length, i, q*1, scale, delta, mean_Y_sse, mean_W_sse,...
-                         100*mean(base_Y_top{l}(k,j,i)), coded/(s*1*q*1), sec));
+                         100*mean(base_Y_top{l}(k,j,i)), coded/(length(rs)*1*q*1), sec));
         end
     end
     save(sprintf('%s_%s_val_%d_%d_%d_%s_exter_base',archname,tranname,testsize,l,l,outlayer),...

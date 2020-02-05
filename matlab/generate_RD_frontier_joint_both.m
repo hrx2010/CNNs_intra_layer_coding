@@ -14,7 +14,6 @@ load(sprintf('%s_cmeans_offset',archname));
 [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 Y = pred(neural,images,outlayer);
 Y_cats = getclass(neural,Y);
-Y = exp(Y)./sum(exp(Y));
 
 disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 
@@ -34,7 +33,7 @@ hist_sum_non0s = zeros(maxsteps,l_length)*NaN;
 hist_sum_total = zeros(maxsteps,l_length)*NaN;
 
 for j = 1:maxsteps
-    slope = -46 + 0.50*(j-1);
+    slope = -38 + 0.50*(j-1);
     ydist_kern = cell(l_length,1);
     coded_kern = cell(l_length,1);
     delta_kern = cell(l_length,1);
@@ -54,9 +53,9 @@ for j = 1:maxsteps
         load(sprintf('%s_%s_val_1000_%d_%d_%s_joint_base',archname,tranname,l,l,outlayer));
         load(sprintf('%s_%s_val_1000_%d_%d_%s_joint_kern',archname,tranname,l,l,outlayer));
         quant_vectors = gettrans([tranname,'_50000_joint'],archname,l);
-        [h,w,p,q,g] = size(perm5(quants(l).Weights,quants(l),size(quant_vectors,1)));
-        quant_weights = reshape(permute(transform_inter(perm5(quants(l).Weights,quants(l),size(quant_vectors,1)),...
-                                                        quant_vectors(:,:,:,1)),[1,2,3,5,4]),[1,1,h*w*p*g,q]);
+        [h,w,p,q,g] = size(quants(l).Weights);
+        quant_weights = quants(l).Weights;
+        quant_weights = reshape(quant_vectors(:,:,:,1)*reshape(permute(quant_weights,[1,2,3,5,4]),h*w*p*g,q),h*w*p*g,q);
         [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
         ydist_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_Y_sse,2^slope);
         coded_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_coded,2^slope);
@@ -73,15 +72,19 @@ for j = 1:maxsteps
         for i = 1:s:h*w*p*g
             rs = i:min(h*w*p*g,s+i-1);
             scale = floor(log2(sqrt(mean(reshape(quant_weights(:,:,rs,:),[],1).^2))));
+            if coded_kern{l}(i) == 0 || coded_base{l}(i) == 0
+                coded_kern{l}(i)
+                coded_base{l}(i)
+                break
+            end
             if scale < -24 %all zeros
                 break
             end
             % quantize for the given lambda
-            quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta_kern{l}(i),coded_kern{l}(i)/(s*1*1*q));
-            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(s*1*1*p));
+            quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta_kern{l}(i),coded_kern{l}(i)/(s*1*1*q));
+            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(s*h*w*p));
         end
-        quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
-                                                  quant_vectors(:,:,:,2)),quants(l),size(quant_vectors,1));
+        quants(l).Weights = permute(reshape(quant_vectors(:,:,:,2)*quant_weights,[h,w,p,g,q]),[1,2,3,5,4]);
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
         non0s_kern{l} = sum(squeeze(max(max(max(abs(quant_weights),[],4),[],1),[],2))>1e-7);
         coded_kern{l} = sum(coded_kern{l},'omitnan');
@@ -104,7 +107,6 @@ for j = 1:maxsteps
     
     Y_hats = pred(ournet,images,outlayer);
     Y_cats = getclass(neural,Y_hats);
-    Y_hats = exp(Y_hats)./sum(exp(Y_hats));
     
     hist_sum_Y_sse(j,1) = mean((Y_hats(:) - Y(:)).^2,1);
     hist_sum_Y_top(j,1) = mean(images.Labels == Y_cats);

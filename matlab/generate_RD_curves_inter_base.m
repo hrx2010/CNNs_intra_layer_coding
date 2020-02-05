@@ -62,7 +62,7 @@ for l = inlayers
                 quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
                 % assemble the net using layers
                 quant = layers(l);
-                quant.Weights = permute(reshape(quant_vectors(:,:,:,2)*layer_weights,p,g,q,h,w),[4,5,1,3,2]);
+                quant.Weights = permute(reshape(quant_vectors(:,:,:,2)*layer_weights,[p,g,q,h,w]),[4,5,1,3,2]);
                 coded = B*(length(rs)*1*p*g);
                 base_delta{l}(k,j,i) = delta;
                 base_coded{l}(k,j,i) = coded;
@@ -75,7 +75,7 @@ for l = inlayers
             quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta,B);
             % assemble the net using layers
             quant = layers(l);
-            quant.Weights = permute(reshape(quant_vectors(:,:,:,2)*layer_weights,p,g,q,h,w),[4,5,1,3,2]);
+            quant.Weights = permute(reshape(quant_vectors(:,:,:,2)*layer_weights,[p,g,q,h,w]),[4,5,1,3,2]);
             offset = delta - 2;
 
             ournet = replaceLayers(neural,quant);
@@ -86,7 +86,7 @@ for l = inlayers
             mean_Y_sse = base_Y_sse{l}(k,j,i);
             mean_Y_top = base_Y_top{l}(k,j,i);
             mean_W_sse = base_W_sse{l}(k,j,i);
-            disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, scale: %+6.2f,  delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e, time: %5.2fs', ...
+            disp(sprintf('%s %s | layer: %03d/%03d, band: %04d/%04d, scale: %+6.2f, delta: %+6.2f, ymse: %5.2e, wmse: %5.2e, top1: %4.1f, rate: %5.2e, time: %5.2fs', ...
                          archname, tranname, l, l_length, i, p*g, scale, delta, mean_Y_sse, mean_W_sse,...
                          100*mean(base_Y_top{l}(k,j,i)), coded/(length(rs)*1*p*g), sec));
         end

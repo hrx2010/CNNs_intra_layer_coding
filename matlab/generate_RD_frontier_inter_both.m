@@ -53,9 +53,9 @@ for j = 1:maxsteps
         load(sprintf('%s_%s_val_1000_%d_%d_%s_inter_base',archname,tranname,l,l,outlayer));
         load(sprintf('%s_%s_val_1000_%d_%d_%s_inter_kern',archname,tranname,l,l,outlayer));
         quant_vectors = gettrans([tranname,'_50000_inter'],archname,l);
-        [h,w,p,q,g] = size(perm5(quants(l).Weights,quants(l),size(quant_vectors,1)));
-        quant_weights = reshape(permute(transform_inter(perm5(quants(l).Weights,quants(l),size(quant_vectors,1)),...
-                                                        quant_vectors(:,:,:,1)),[1,2,3,5,4]),[h,w,p*g,q]);
+        [h,w,p,q,g] = size(quants(l).Weights);
+        quant_weights = quants(l).Weights;
+        quant_weights = reshape(quant_vectors(:,:,:,1)*reshape(permute(quant_weights,[3,5,4,1,2]),p*g,q*h*w),p*g,q*h*w);
         [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
         ydist_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_Y_sse,2^slope);
         coded_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_coded,2^slope);
@@ -69,18 +69,17 @@ for j = 1:maxsteps
         denom_base{l} = 1*1*p*p*g;
 
         s = strides(l);
-        for i = 1:s:1*1*p*g
-            rs = i:min(1*1*p*g,s+i-1);
-            scale = floor(log2(sqrt(mean(reshape(quant_weights(:,:,rs,:),[],1).^2))));
-            if scale < -25 %all zeros
+        for i = 1:s:p*g
+            rs = i:min(p*g,s+i-1);
+            scale = floor(log2(sqrt(mean(reshape(quant_weights(rs,:,:,:),[],1).^2))));
+            if scale < -24 %all zeros
                 continue
             end
             % quantize for the given lambda
-            quant_weights(:,:,rs,:) = quantize(quant_weights(:,:,rs,:),2^delta_kern{l}(i),coded_kern{l}(i)/(s*h*w*q));
-            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(s*1*1*p));
+            quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta_kern{l}(i),coded_kern{l}(i)/(length(rs)*h*w*q));
+            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(length(rs)*1*1*p));
         end
-        quants(l).Weights = perm5(transform_inter(permute(reshape(quant_weights,[h,w,p,g,q]),[1,2,3,5,4]),...
-                                                  quant_vectors(:,:,:,2)),quants(l),size(quant_vectors,1));
+        quants(l).Weights = permute(reshape(quant_vectors(:,:,:,2)*quant_weights,[p,g,q,h,w]),[4,5,1,3,2]);
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
         non0s_kern{l} = sum(squeeze(max(max(max(abs(quant_weights),[],4),[],1),[],2))>1e-7);
         coded_kern{l} = sum(coded_kern{l},'omitnan');
@@ -125,5 +124,5 @@ for j = 1:maxsteps
 end
 
 save(sprintf('%s_%s_sum_%d_%d_%d_%s_inter_total',archname,tranname,testsize,inlayers(1),inlayers(end),outlayer),...
-     'hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top','hist_sum_non0s',...
+     '-v7.3','hist_sum_coded','hist_sum_Y_sse','pred_sum_Y_sse','hist_sum_W_sse','hist_sum_Y_top','hist_sum_non0s',...
      'hist_sum_total','hist_sum_denom');
