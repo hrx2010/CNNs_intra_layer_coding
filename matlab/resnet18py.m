@@ -12,7 +12,10 @@ function net = resnet18py
     oldlayer = lgraph.Layers(2);
     lgraph = removeLayers(lgraph,oldlayer.Name);
     lgraph = connectLayers(lgraph,'data','conv1');
-    oldlayer = lgraph.Layers(5);
+    oldlayer = lgraph.Layers(69);
+    newlayer = convolution2dLayer([1,1],1000,'Name','fc1000','Weights',permute(oldlayer.Weights,[3,4,2,1]),...
+                                  'Bias',permute(oldlayer.Bias,[2,3,1]));
+    lgraph = replaceLayer(lgraph,oldlayer.Name,newlayer);
     % newlayer = maxPooling2dLayer(oldlayer.PoolSize,'Stride',oldlayer.Stride,'Padding',1,'Name',oldlayer.Name);
     % lgraph = replaceLayer(lgraph,oldlayer.Name,newlayer);
     net = assembleNetwork(lgraph);
