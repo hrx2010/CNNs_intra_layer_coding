@@ -1,35 +1,20 @@
 clear all;
 close all;
 
-archname = 'vgg16';
-tranname = {'klt','kkt'};
-modename = {'inter','inter'};
-numcoeff = [512,4096,1000];
-colorind = [9,10,11,12,13,14,15,16,8,6,5,7,2,4,1,3];
-testsize = 50000;
-map = vega10;
-map(10,:) = 0.5;
-
-for l = 14:16
-    for t = 2%1:length(tranname)
-        load(sprintf('%s_%s_sum_%d_%d_%d_output_%s_total.mat',archname,tranname{t},testsize,1,16,modename{t}));
-        plot(hist_sum_coded,hist_sum_non0s(:,l)/numcoeff(l-13)*100,'Color',map(colorind(l),:));
-        hold on;
-    end
-end
+load('alexnetpy_klt_sum_5_1_8_output_inter_total.mat');
+plot(hist_sum_coded,(256-hist_sum_non0s(:,6))/256*100,'Color',0.0*[1,1,1]);
+hold on;
+plot(hist_sum_coded,(4096-hist_sum_non0s(:,7))/4096*100,'Color',0.5*[1,1,1]);
+hold on;
+plot(hist_sum_coded,(4096-hist_sum_non0s(:,8))/1000*100,'Color','r');
 
 hold off;
-axis([0,8,0,100]);
+axis([0,4,0,100]);
 
-xticks(0:2:8);
+xticks(0:1:4);
 yticks(0:25:100);
 
 x = xticklabels;
-x{end} = '$R$';
-xticklabels(x);
-
-%xticklabels({});
-
 y = yticklabels;
 y{end} = '$\%$';
 yticklabels(y);
@@ -37,4 +22,25 @@ yticklabels(y);
 set(gcf,'Color','none');
 grid on;
 set(gca,'YMinorGrid','off');
-pdfprint(sprintf('temp_%d.pdf',l),'Width',10.75,'Height',9,'Position',[1.5,1.5,8.75,7]);
+pdfprint(sprintf('temp_%d.pdf',0),'Width',9.75,'Height',9,'Position',[2,1.25,7,7]);
+
+plot(hist_sum_coded,(64-hist_sum_non0s(:,2))/64*100,'Color',0.0*[1,1,1]);
+hold on;
+% plot(hist_sum_coded,(192-hist_sum_non0s(:,3))/192*100,'Color',0.0*[1,1,1]);
+% hold on;
+plot(hist_sum_coded,(384-hist_sum_non0s(:,4))/384*100,'Color',0.5*[1,1,1]);
+hold on;
+plot(hist_sum_coded,(256-hist_sum_non0s(:,5))/256*100,'Color','r');
+
+axis([0,1.2,0,100]);
+
+yticks(0:25:100);
+xticks(0:0.3:1.2);
+y = yticklabels;
+y{end} = '$\%$';
+yticklabels(y);
+
+set(gcf,'Color','none');
+grid on;
+set(gca,'YMinorGrid','off');
+pdfprint(sprintf('temp_%d.pdf',0),'Width',9.75,'Height',9,'Position',[1.5,1.25,7,7]);

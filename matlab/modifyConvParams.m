@@ -1,4 +1,4 @@
-function lgraph =  modifyConvParams(lgraph,weight,biases,bnorm_mean,bnorm_vars)
+function lgraph =  modifyConvParams(lgraph,weight,biases,stride,padding,bnorm_mean,bnorm_vars)
     if nargin < 4
         bnorm_mean = cell(length(weight),1);
         bnorm_vars = cell(length(weight),1);
@@ -20,6 +20,7 @@ function lgraph =  modifyConvParams(lgraph,weight,biases,bnorm_mean,bnorm_vars)
             [h,w,p,q,g] = size(oldlayer.Weights);
             newlayer.Weights = reshape(permute(weight{l},[3,4,2,1]),[h,w,p,q,g]);
             newlayer.Bias = reshape(permute(biases{l},[2,3,1]),[1,1,q,g]);
+            newlayer.Stride = stride(l,:);
           case 'nnet.cnn.layer.GroupedConvolution2DLayer'
             [h,w,p,q,g] = size(oldlayer.Weights);
             newlayer.Weights = reshape(permute(weight{l},[3,4,2,1]),[h,w,p,q,g]);
