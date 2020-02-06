@@ -6,7 +6,7 @@ function lgraph =  modifyConvLayers(neural,means,offset)
         lgraph = layerGraph(neural);
     end
     inlayers = lgraph.Layers;
-    l_kernel = findconv(inlayers);
+    l_kernel = findconv(inlayers,{'conv'});
     l_length = length(l_kernel);
 
     for l = 1:l_length

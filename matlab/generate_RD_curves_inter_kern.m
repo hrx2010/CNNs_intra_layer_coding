@@ -22,7 +22,7 @@ load(sprintf('%s_cmeans_offset',archname));
 layers = modifyConvLayers(neural,cmeans,offset);
 neural = assembleNetwork(layers);
 
-l_kernel = findconv(neural.Layers); 
+l_kernel = findconv(neural.Layers,{'conv'}); 
 l_length = length(l_kernel);
 
 kern_delta = cell(l_length,1);

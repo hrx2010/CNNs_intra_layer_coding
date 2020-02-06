@@ -27,6 +27,9 @@ function [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize)
       case 'mobilenetv2'
         readerfun = @read224x224;
         neural = mobilenetv2;
+      case 'mobilenetv2py'
+        readerfun = @read224x224;
+        neural = mobilenetv2py;
     end
 
     labels = neural.Layers(end).Classes(textread(GetFullPath(labeldir)));
