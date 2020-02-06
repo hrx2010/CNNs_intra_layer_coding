@@ -27,7 +27,7 @@ function T = generate_KL_joint(archname,testsize,klttype)
 
     [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
 
-    l_kernel = findconv(neural.Layers);
+    l_kernel = findconv(neural.Layers,{'conv'});
     l_length = length(l_kernel);
 
     T = cell(l_length,1);
@@ -35,7 +35,7 @@ function T = generate_KL_joint(archname,testsize,klttype)
 
     for l = 1:l_length
         layer = layers(l);
-        layer_weights = perm5(layer.Weights,layer);
+        layer_weights = layer.Weights;
         % [X_mean, X_vars] = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,size(layer_weights,5),size(layer_weights,3));
         [h,w,p,q,g] = size(layer_weights);
         T{l} = zeros(h*w*p,h*w*p,1*g,2);

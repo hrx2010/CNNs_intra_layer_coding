@@ -23,7 +23,7 @@ Y_cats = getclass(neural,Y);
 
 disp(sprintf('%s | top1: %5.2f', archname, 100*mean(images.Labels == Y_cats)));
 
-l_kernel = findconv(neural.Layers); 
+l_kernel = findconv(neural.Layers,{'conv'}); 
 l_length = length(l_kernel);
 
 kern_delta = cell(l_length,1);

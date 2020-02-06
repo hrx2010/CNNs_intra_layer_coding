@@ -20,7 +20,7 @@ function [cmeans,offset] = channelMeans(archname, testsize)
     labeldir = './ILSVRC2012_val.txt';
     [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize);
       
-    l_kernel = findconv(neural.Layers);
+    l_kernel = findconv(neural.Layers,{'conv'});
     l_length = length(l_kernel);
 
     cmeans = cell(l_length,1);
@@ -29,7 +29,7 @@ function [cmeans,offset] = channelMeans(archname, testsize)
 
     for l = 1:l_length
         layer = layers(l);
-        layer_weights = perm5(layer.Weights,layer);
+        layer_weights = layer.Weights;
         [h,w,p,q,g] = size(layer_weights);
         X_mean = predmean(neural,images,neural.Layers(l_kernel(l)-1).Name,g,p);
 

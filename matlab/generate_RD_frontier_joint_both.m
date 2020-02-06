@@ -33,7 +33,7 @@ hist_sum_non0s = zeros(maxsteps,l_length)*NaN;
 hist_sum_total = zeros(maxsteps,l_length)*NaN;
 
 for j = 1:maxsteps
-    slope = -38 + 0.50*(j-1);
+    slope = -32 + 0.50*(j-1);
     ydist_kern = cell(l_length,1);
     coded_kern = cell(l_length,1);
     delta_kern = cell(l_length,1);
@@ -55,7 +55,7 @@ for j = 1:maxsteps
         quant_vectors = gettrans([tranname,'_50000_joint'],archname,l);
         [h,w,p,q,g] = size(quants(l).Weights);
         quant_weights = quants(l).Weights;
-        quant_weights = reshape(quant_vectors(:,:,:,1)*reshape(permute(quant_weights,[1,2,3,5,4]),h*w*p*g,q),h*w*p*g,q);
+        quant_weights = quant_vectors(:,:,:,1)*reshape(permute(quant_weights,[1,2,3,5,4]),h*w*p*g,q);
         [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
         ydist_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_Y_sse,2^slope);
         coded_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_coded,2^slope);
@@ -66,23 +66,18 @@ for j = 1:maxsteps
         ydist_base{l} = lambda2points(base_best_coded,base_best_Y_sse,base_best_Y_sse,2^slope);
         coded_base{l} = lambda2points(base_best_coded,base_best_Y_sse,base_best_coded,2^slope);
         delta_base{l} = lambda2points(base_best_coded,base_best_Y_sse,base_best_delta,2^slope);
-        denom_base{l} = 1*1*p*p*g;
+        denom_base{l} = 1*p*g*p*g;
 
         s = strides(l);
         for i = 1:s:h*w*p*g
             rs = i:min(h*w*p*g,s+i-1);
-            scale = floor(log2(sqrt(mean(reshape(quant_weights(:,:,rs,:),[],1).^2))));
-            if coded_kern{l}(i) == 0 || coded_base{l}(i) == 0
-                coded_kern{l}(i)
-                coded_base{l}(i)
-                break
-            end
+            scale = floor(log2(sqrt(mean(reshape(quant_weights(rs,:,:,:),[],1).^2))));
             if scale < -24 %all zeros
                 break
             end
             % quantize for the given lambda
-            quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta_kern{l}(i),coded_kern{l}(i)/(s*1*1*q));
-            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(s*h*w*p));
+            quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta_kern{l}(i),coded_kern{l}(i)/(length(rs)*1*1*1*q));
+            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(length(rs)*h*w*p*g));
         end
         quants(l).Weights = permute(reshape(quant_vectors(:,:,:,2)*quant_weights,[h,w,p,g,q]),[1,2,3,5,4]);
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));

@@ -18,6 +18,9 @@ function [neural,images] = loadnetwork(archname,imagedir, labeldir, testsize)
       case 'resnet50py'
         readerfun = @read224x224py;
         neural = resnet50py;
+      case 'resnet18py'
+        readerfun = @read224x224py;
+        neural = resnet18py;
       case 'densenet201'
         readerfun = @read224x224;
         neural = densenet201;

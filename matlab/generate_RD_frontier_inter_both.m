@@ -66,25 +66,27 @@ for j = 1:maxsteps
         ydist_base{l} = lambda2points(base_best_coded,base_best_Y_sse,base_best_Y_sse,2^slope);
         coded_base{l} = lambda2points(base_best_coded,base_best_Y_sse,base_best_coded,2^slope);
         delta_base{l} = lambda2points(base_best_coded,base_best_Y_sse,base_best_delta,2^slope);
-        denom_base{l} = 1*1*p*p*g;
+        denom_base{l} = 1*p*g*p*g;
 
         s = strides(l);
         for i = 1:s:p*g
             rs = i:min(p*g,s+i-1);
             scale = floor(log2(sqrt(mean(reshape(quant_weights(rs,:,:,:),[],1).^2))));
             if scale < -24 %all zeros
+                quant_weights(rs,:,:,:) = 0; %actual zero
                 continue
             end
             % quantize for the given lambda
             quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta_kern{l}(i),coded_kern{l}(i)/(length(rs)*h*w*q));
-            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(length(rs)*1*1*p));
+            quant_vectors(:,rs,:,2) = quantize(quant_vectors(:,rs,:,2),2^delta_base{l}(i),coded_base{l}(i)/(length(rs)*1*p*g));
         end
         quants(l).Weights = permute(reshape(quant_vectors(:,:,:,2)*quant_weights,[p,g,q,h,w]),[4,5,1,3,2]);
         wdist_kern{l} = double(sum((quants(l).Weights(:) - neural.Layers(l_kernel(l)).Weights(:)).^2));
-        non0s_kern{l} = sum(squeeze(max(max(max(abs(quant_weights),[],4),[],1),[],2))>1e-7);
+        non0s_kern{l} = p*g - find([var(quant_weights,[],2);0]==0,1) + 1;
         coded_kern{l} = sum(coded_kern{l},'omitnan');
         coded_base{l} = sum(coded_base{l},'omitnan');
     end
+    non0s_kern
     ournet = replaceLayers(neural,quants);
 
     ydist_kern = cell2mat(ydist_kern);
@@ -117,7 +119,7 @@ for j = 1:maxsteps
     disp(sprintf('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %4.1f, rate: %5.2e',...
                  archname, tranname, slope, hist_sum_Y_sse(j,1), pred_sum_Y_sse(j,1), ...
                  hist_sum_W_sse(j,1), 100*hist_sum_Y_top(j,1), hist_sum_coded(j,1)));
-    if hist_sum_coded(j) == 0 || ...
+    if hist_sum_coded(j) == 0  ...
        hist_sum_Y_top(j) <= 0.002
         break;
     end
