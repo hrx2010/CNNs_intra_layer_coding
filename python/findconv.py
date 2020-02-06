@@ -26,6 +26,14 @@ def pushconv(layers,container,includenorm=True):
         layers.append(container)
     elif isinstance(container, torch.nn.Conv2d):
         layers.append(container)
+    elif isinstance(container, models.resnet.BasicBlock):
+        pushconv(layers,container.conv1,includenorm)
+        pushconv(layers,container.bn1,includenorm)
+        pushconv(layers,container.conv2,includenorm)
+        pushconv(layers,container.bn2,includenorm)
+        if isinstance(container.downsample,torch.nn.Sequential):
+            pushconv(layers,container.downsample[0])
+            pushconv(layers,container.downsample[1])
     elif isinstance(container, models.resnet.Bottleneck):
         pushconv(layers,container.conv1,includenorm)
         pushconv(layers,container.bn1,includenorm)
