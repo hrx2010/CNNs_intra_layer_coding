@@ -32,8 +32,8 @@ def pushconv(layers,container,includenorm=True):
         pushconv(layers,container.conv2,includenorm)
         pushconv(layers,container.bn2,includenorm)
         if isinstance(container.downsample,torch.nn.Sequential):
-            pushconv(layers,container.downsample[0])
-            pushconv(layers,container.downsample[1])
+            pushconv(layers,container.downsample[0],includenorm)
+            pushconv(layers,container.downsample[1],includenorm)
     elif isinstance(container, models.resnet.Bottleneck):
         pushconv(layers,container.conv1,includenorm)
         pushconv(layers,container.bn1,includenorm)
@@ -41,10 +41,10 @@ def pushconv(layers,container,includenorm=True):
         pushconv(layers,container.bn2,includenorm)
         pushconv(layers,container.conv3,includenorm)
         if isinstance(container.downsample,torch.nn.Sequential):
-            pushconv(layers,container.downsample[0])
-        pushconv(layers,container.bn3)
+            pushconv(layers,container.downsample[0],includenorm)
+        pushconv(layers,container.bn3,includenorm)
         if isinstance(container.downsample,torch.nn.Sequential):
-            pushconv(layers,container.downsample[1])
+            pushconv(layers,container.downsample[1],includenorm)
         # if isinstance(container.downsample,torch.nn.Sequential):
         #     pushconv(layers,container.downsample[0])
         #     pushconv(layers,container.downsample[1])
