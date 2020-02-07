@@ -20,7 +20,7 @@ disp(sprintf('%s | top1: %4.1f', archname, 100*mean(images.Labels == Y_cats)));
 layers = modifyConvLayers(neural,cmeans,offset);
 neural = assembleNetwork(layers);
 
-l_kernel = findconv(neural.Layers); % or specify the layer number directly
+l_kernel = findconv(neural.Layers,{'conv'}); % or specify the layer number directly
 l_length = length(l_kernel);
 
 hist_sum_Y_top = zeros(maxsteps,1)*NaN;
@@ -50,8 +50,8 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        load(sprintf('%s_%s_val_1000_%d_%d_%s_joint_base',archname,tranname,l,l,outlayer));
-        load(sprintf('%s_%s_val_1000_%d_%d_%s_joint_kern',archname,tranname,l,l,outlayer));
+        load(sprintf('%s_%s_val_500_%d_%d_%s_joint_base',archname,tranname,l,l,outlayer));
+        load(sprintf('%s_%s_val_500_%d_%d_%s_joint_kern',archname,tranname,l,l,outlayer));
         quant_vectors = gettrans([tranname,'_50000_joint'],archname,l);
         [h,w,p,q,g] = size(quants(l).Weights);
         quant_weights = quants(l).Weights;
