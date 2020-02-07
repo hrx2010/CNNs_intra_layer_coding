@@ -16,11 +16,6 @@ imp.reload(findconv)
 arch = sys.argv[1]#'alexnet'
 #dims = scipy.io.loadmat(arch+'_dim.mat')['dim'][0]
 
-if arch == 'alexnet':
-    net = torchvision.models.alexnet(pretrained=True)
-elif arch == 'resnet50':
-    net = torchvision.models.resnet50(pretrained=True)
-
 rgb_avg = [0.485, 0.456, 0.406]
 rgb_std = [0.229, 0.224, 0.225]
 
@@ -32,22 +27,26 @@ transdata = transforms.Compose(
 
 xform = sys.argv[2]
 testsize = int(sys.argv[3])
-gpuid = int(sys.argv[4])
-parts = int(sys.argv[5])
+#gpuid = int(sys.argv[4])
+parts = 1#int(sys.argv[5])
 
 device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
-if arch == 'alexnet':
+if arch == 'alexnetpy':
     net = torchvision.models.alexnet(pretrained=True)
     batchsize = 10
-elif arch == 'resnet50':
+elif arch == 'resnet50py':
     net = torchvision.models.resnet50(pretrained=True)
-    batchsize = 1
-elif arch == 'mobilenetv2':
+    batchsize = 10
+elif arch == 'mobilenetv2py':
     net = torchvision.models.mobilenet.mobilenet_v2(pretrained=True)
-    batchsize = 1
+    batchsize = 10
+elif arch == 'resnet18py':
+    net = torchvision.models.mobilenet.mobilenet_v2(pretrained=True)
+    batchsize = testsize//1000
+
 layers = findconv.findconv(net,includenorm=False)
 
-dataset = torchvision.datasets.ImageNet(root='/media/data2/seany/ILSVRC2012_devkit_t12',split='val',transform=transdata)
+dataset = torchvision.datasets.ImageNet(root='~/Developer/ILSVRC2012_devkit_t12',split='val',transform=transdata)
 dataset.samples = dataset.samples[::len(dataset.samples)//testsize]
 dataset.samples = dataset.samples[np.mod(gpuid,parts)::parts]
 
