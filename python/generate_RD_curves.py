@@ -15,7 +15,7 @@ testsize = int(sys.argv[4])
 maxsteps = 32
 maxrates = 17
 
-neural, images, labels = loadnetwork(archname,0,testsize)
+neural, images, labels = loadnetwork(archname,gpuid,testsize)
 
 neural.eval()
 Y = predict(neural,images)

@@ -1,17 +1,19 @@
 import time
 import h5py
 import torch
-import scipy.io
+import scipy as np
+import scipy.io as io
 import torch.nn as nn
 import torchvision.models as models
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+import resnetpy
 import alexnetpy
 
 device = None
 
-batch_size = 225
+batch_size = 25
 
 rgb_avg = [0.485, 0.456, 0.406]
 rgb_std = [0.229, 0.224, 0.225]
@@ -22,12 +24,16 @@ transdata = transforms.Compose(
 	 transforms.ToTensor(),
 	 transforms.Normalize(rgb_avg, rgb_std)])
 
+def loadvarstat(archname,trantype,testsize):
+    mat = io.loadmat(('%s_%s_stats_%d.mat' % (archname, trantype, testsize)))
+    return np.array(mat['cov'])
+
 def loadnetwork(archname,gpuid,testsize):
     global device
     if archname == 'alexnetpy':
         net = alexnetpy.alexnet(pretrained=True)
     elif archname == 'resnet18py':
-        net = models.resnet18(pretrained=True)
+        net = resnetpy.resnet18(pretrained=True)
     elif archname == 'resnet50py':
         net = models.resnet50(pretrained=True)
     elif archname == 'mobilenetv2py':
@@ -38,14 +44,9 @@ def loadnetwork(archname,gpuid,testsize):
                 root='~/Developer/ILSVRC2012_devkit_t12',\
                 split='val',transform=transdata)
     images.samples = images.samples[::len(images.samples)//testsize]
-    labels = torch.tensor([img[1] for img in images])
+    labels = torch.tensor([images.samples[i][1] for i in range(0,len(images.samples))])
 
     return net.to(device), images, labels.to(device)
-
-def loadstrides(archname,tranname):
-    if archname == 'alexnetpy':
-        if tranname == 'inter':
-            return [1,8,8,8,8,8,8,8]
 
 def gettrans(archname,trantype,tranname,layer):
 	file = h5py.File('%s_%s_50000_%s.mat' %(archname,tranname,trantype))
@@ -55,7 +56,7 @@ def getdevice():
 	global device
 	return device
 
-def getperm(trantype):
+def getperm(trantype,dir=1):
     if trantype == 'inter':
         return [1,0,2], [0,1]
     elif trantype == 'intra':
@@ -67,6 +68,12 @@ def getperm(trantype):
     elif trantype == 'extra':
         return [1,0,2], [1,0]
     
+def inv(perm):
+    inverse = [0] * len(perm)
+    for i, p in enumerate(perm):
+        inverse[p] = i
+    return inverse
+
 def quantize(weights, delta, b):
     if b > 0:
         minpoint = -(2**(b-1))*delta
@@ -84,10 +91,10 @@ def gettop1(logp):
 
     return inds
         
-def predict(net,images):
+def predict(net,images,batch_size=100):
     global device
     y_hat = torch.zeros(0,device=device)
-    loader = torch.utils.data.DataLoader(images,batch_size=100)
+    loader = torch.utils.data.DataLoader(images,batch_size=batch_size)
     with torch.no_grad():
         for x, y in loader:
             x = x.to(device)
@@ -100,7 +107,7 @@ def findconv(net,includenorm=True):
         return layers
 
 def pushconv(layers,container,includenorm=True):
-    if isinstance(container, models.resnet.ResNet):
+    if isinstance(container, resnetpy.ResNet):
         pushconv(layers,container.conv1,includenorm)
         pushconv(layers,container.bn1,includenorm)
         pushconv(layers,container.layer1,includenorm)
@@ -118,7 +125,7 @@ def pushconv(layers,container,includenorm=True):
         layers.append(container)
     elif isinstance(container, torch.nn.Conv2d):
         layers.append(container)
-    elif isinstance(container, models.resnet.BasicBlock):
+    elif isinstance(container, resnetpy.BasicBlock):
         pushconv(layers,container.conv1,includenorm)
         pushconv(layers,container.bn1,includenorm)
         pushconv(layers,container.conv2,includenorm)
@@ -126,7 +133,7 @@ def pushconv(layers,container,includenorm=True):
         if isinstance(container.downsample,torch.nn.Sequential):
             pushconv(layers,container.downsample[0],includenorm)
             pushconv(layers,container.downsample[1],includenorm)
-    elif isinstance(container, models.resnet.Bottleneck):
+    elif isinstance(container, resnetpy.Bottleneck):
         pushconv(layers,container.conv1,includenorm)
         pushconv(layers,container.bn1,includenorm)
         pushconv(layers,container.conv2,includenorm)
