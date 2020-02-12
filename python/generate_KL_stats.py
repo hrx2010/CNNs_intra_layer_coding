@@ -21,11 +21,9 @@ archname = str(sys.argv[1])
 trantype = str(sys.argv[2])
 testsize = int(sys.argv[3])
 
-#dims = scipy.io.loadmat(arch+'_dim.mat')['dim'][0]
-
 model, dataset, labels = loadnetwork(archname,gpuid,testsize)
 model.eval()
-Y = predict(model,dataset)
+Y = predict(model,dataset,1)
 Y_cats = gettop1(Y)
 mean_Y_top = (Y_cats == labels).double().mean()
 print('%s %s | top1: %5.2f' % (archname, trantype, 100*mean_Y_top))
@@ -46,7 +44,6 @@ for x, y in dataloader:
     x = x.to(common.device)
     y = y.to(common.device)
     y_hat = model(x)
-    #y_hat = y_hat/torch.sum(y_hat)
     
     sec = time.time()
     for i in range(0,y_hat.size(1)): #for each class

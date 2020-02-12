@@ -226,8 +226,8 @@ def _resnet(arch, block, layers, pretrained, progress, **kwargs):
     with torch.no_grad():
         weight = model.fc.weight
         biases = model.fc.bias
-        conv2d = nn.Conv2d(512, 1000, kernel_size=1)
-        conv2d.weight[:] = weight.reshape([1000,512,1,1])
+        conv2d = nn.Conv2d(weight.shape[1],weight.shape[0],kernel_size=1)
+        conv2d.weight[:] = weight.reshape([weight.shape[0],weight.shape[1],1,1])
         conv2d.bias[:] = biases[:]
         model.fc = conv2d
 

@@ -34,8 +34,10 @@ def loadnetwork(archname,gpuid,testsize):
         net = alexnetpy.alexnet(pretrained=True)
     elif archname == 'resnet18py':
         net = resnetpy.resnet18(pretrained=True)
+    elif archname == 'resnet34py':
+        net = resnetpy.resnet34(pretrained=True)
     elif archname == 'resnet50py':
-        net = models.resnet50(pretrained=True)
+        net = resnetpy.resnet50(pretrained=True)
     elif archname == 'mobilenetv2py':
         net = models.mobilenet.mobilenet_v2(pretrained=True)
         # load the dataset
