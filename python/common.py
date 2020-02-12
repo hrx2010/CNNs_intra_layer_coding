@@ -24,9 +24,23 @@ transdata = transforms.Compose(
 	 transforms.ToTensor(),
 	 transforms.Normalize(rgb_avg, rgb_std)])
 
-def loadvarstat(archname,trantype,testsize):
+def loadvarstats(archname,trantype,testsize):
     mat = io.loadmat(('%s_%s_stats_%d.mat' % (archname, trantype, testsize)))
     return np.array(mat['cov'])
+
+def loadrdpoints(archname,tranname,trantype,l):
+    mat = io.loadmat(sprintf('%s_%s_val_%d_0100_output_%s_%s_kern',\
+                             archname,tranname,l,trantype))
+    return mat['kern_Y_sse'], mat['kern_delta'], mat['kern_coded']
+
+def findrdcurves(y_sse,delta,coded):
+    ind1 = np.argmin(y_sse,1)
+    ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
+    ind2 = np.arange(ind1.shape[1]).reshape(1,-1).repeat(ind1.shape[0],0)
+    inds = np.ravel_multi_index((ind0,ind1,ind2),y_sse.shape)
+
+
+
 
 def loadnetwork(archname,gpuid,testsize):
     global device
@@ -86,6 +100,29 @@ def quantize(weights, delta, b):
 
     return delta*(weights//delta).clamp(minpoint,maxpoint)
     
+def min_inds(mat,axis):
+    ind1 = np.argmin(mat,axis)
+    ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
+    ind2 = np.arange(ind1.shape[1]).reshape(1,-1).repeat(ind1.shape[0],0)
+    inds = np.ravel_multi_index((ind0,ind1,ind2),mat.shape)
+
+    return inds
+
+def lambda2points(X,Y,Z,lam):
+    X = X.flatten(1)
+    Y = Y.flatten(1)
+    Z = Z.flatten(1)
+    points = np.zeros(Z.shape[1])
+
+    for i in range(0,X.shape[1]):
+        if np.all(np.isinf(X[:,i])):
+            continue
+        slopes = np.append(np.diff(Y[:,i])/np.diff(X[:,i]),0.0)
+        points[i] = Z[:,i].argwhere(slopes<lam)[0]
+
+    return points
+
+
 def gettop1(logp):
     logp = logp.exp()
     logp = logp/logp.sum(1).reshape(-1,1)

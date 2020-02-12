@@ -33,7 +33,7 @@ hist_sum_non0s = zeros(maxsteps,l_length)*NaN;
 hist_sum_total = zeros(maxsteps,l_length)*NaN;
 
 for j = 1:maxsteps
-    slope = -32 + 0.50*(j-1);
+    slope = -24.5 + 0.50*(j-1);
     ydist_kern = cell(l_length,1);
     coded_kern = cell(l_length,1);
     delta_kern = cell(l_length,1);
@@ -73,7 +73,13 @@ for j = 1:maxsteps
             rs = i:min(h*w*p*g,s+i-1);
             scale = floor(log2(sqrt(mean(reshape(quant_weights(rs,:,:,:),[],1).^2))));
             if scale < -24 %all zeros
-                break
+                continue
+            end
+            if coded_kern{l}(i) == 0
+                coded_base{l}(i) = 0;
+            end
+            if coded_base{l}(i) == 0
+                coded_kern{l}(i) = 0;
             end
             % quantize for the given lambda
             quant_weights(rs,:,:,:) = quantize(quant_weights(rs,:,:,:),2^delta_kern{l}(i),coded_kern{l}(i)/(length(rs)*1*1*1*q));
