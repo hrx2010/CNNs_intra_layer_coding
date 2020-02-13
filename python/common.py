@@ -28,19 +28,17 @@ def loadvarstats(archname,trantype,testsize):
     mat = io.loadmat(('%s_%s_stats_%d.mat' % (archname, trantype, testsize)))
     return np.array(mat['cov'])
 
-def loadrdpoints(archname,tranname,trantype,l):
+def loadrdcurves(archname,tranname,trantype,l):
     mat = io.loadmat(sprintf('%s_%s_val_%d_0100_output_%s_%s_kern',\
                              archname,tranname,l,trantype))
     return mat['kern_Y_sse'], mat['kern_delta'], mat['kern_coded']
 
-def findrdcurves(y_sse,delta,coded):
+def findrdpoints(y_sse,delta,coded):
     ind1 = np.argmin(y_sse,1)
     ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
     ind2 = np.arange(ind1.shape[1]).reshape(1,-1).repeat(ind1.shape[0],0)
     inds = np.ravel_multi_index((ind0,ind1,ind2),y_sse.shape)
-
-
-
+    return y_sse.flatten(0)[inds] delta.flatten(0)[inds] coded.flatten(0)[inds]
 
 def loadnetwork(archname,gpuid,testsize):
     global device
