@@ -33,7 +33,7 @@ hist_sum_non0s = zeros(maxsteps,l_length)*NaN;
 hist_sum_total = zeros(maxsteps,l_length)*NaN;
 
 for j = 1:maxsteps
-    slope = -31 + 0.50*(j-1);
+    slope = -36 + 0.50*(j-1);
     ydist_kern = cell(l_length,1);
     coded_kern = cell(l_length,1);
     delta_kern = cell(l_length,1);
@@ -43,12 +43,12 @@ for j = 1:maxsteps
 
     quants = neural.Layers(l_kernel);
     for l = inlayers
-        load(sprintf('%s_%s_val_500_%d_%d_%s_inter_kern',archname,tranname,l,l,outlayer));
+        load(sprintf('%s_%s_val_1000_%d_%d_%s_inter_kern',archname,tranname,l,l,outlayer));
         basis_vectors = gettrans([tranname,'_50000_inter'],archname,l);
         [h,w,p,q,g] = size(quants(l).Weights);
         quant_weights = quants(l).Weights;
         quant_weights = reshape(basis_vectors(:,:,:,1)*reshape(permute(quant_weights,[3,5,4,1,2]),p*g,q*h*w),p*g,q*h*w);
-        [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(mean(kern_Y_sse{l},4),kern_delta{l},kern_coded{l});
+        [kern_best_Y_sse,kern_best_delta,kern_best_coded] = finddelta(kern_Y_sse{l},kern_delta{l},kern_coded{l});
         ydist_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_Y_sse,2^slope);
         coded_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_coded,2^slope);
         delta_kern{l} = lambda2points(kern_best_coded,kern_best_Y_sse,kern_best_delta,2^slope);
@@ -56,7 +56,7 @@ for j = 1:maxsteps
 
         s = strides(l);
         for i = 1:s:p*g%min(h*w*q,p*g)
-            rs = i:min(p*q,s+i-1);
+            rs = i:min(p*g,s+i-1);
             scale = floor(log2(sqrt(mean(reshape(quant_weights(rs,:,:,:),[],1).^2))));
             if scale < -24 %all zeros
                 continue

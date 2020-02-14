@@ -26,17 +26,21 @@ function points = lambda2points(X,Y,Z,lambda)
 % TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 % PERFORMANCE OF THIS SOFTWARE.
 
-    lambda = max(0,lambda);
-    points = zeros(size(Z,2),size(Z,3))*NaN;
     % compute the convex hulls
+    % points = Z(lambda*X+Y == min(lambda*X+Y,[],1))
+
+    points = zeros(size(Z,2),size(Z,3))*NaN;
     for i = 1:size(X(:,:),2)
         if all(isnan(X(:,i)))
             continue
         end
-        k = rdhull(X(:,i),Y(:,i));
-        l = [-diff(Y(k,i))./diff(X(k,i));0];
+        [~,j] = min(lambda*X(:,i) + Y(:,i));
+        points(i) = Z(j,i);
+
+        %k = rdhull(X(:,i),Y(:,i));
+        %l = [-diff(Y(k,i))./diff(X(k,i));0];
         %find the first point with slope less than lambda
-        z = Z(k,i);
-        points(i) = z(find(l<=lambda,1));
+        %z = Z(k,i);
+        %points(i) = z(find(l<=lambda,1));
     end
 end
