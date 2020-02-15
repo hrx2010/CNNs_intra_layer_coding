@@ -28,17 +28,27 @@ def loadvarstats(archname,trantype,testsize):
     mat = io.loadmat(('%s_%s_stats_%d.mat' % (archname, trantype, testsize)))
     return np.array(mat['cov'])
 
-def loadrdcurves(archname,tranname,trantype,l):
-    mat = io.loadmat(sprintf('%s_%s_val_%d_0100_output_%s_%s_kern',\
-                             archname,tranname,l,trantype))
-    return mat['kern_Y_sse'], mat['kern_delta'], mat['kern_coded']
+def loadrdcurves(archname,tranname,trantype,l,part):
+    #mat = io.loadmat('%s_%s_val_%03d_0100_output_%s_kern' % (archname,tranname,l,trantype))
+    #return mat['kern_Y_sse'], mat['kern_delta'], mat['kern_coded']
+    mat = io.loadmat('%s_%s_val_1000_%d_%d_output_%s_%s' % (archname,tranname,l+1,l+1,trantype,part))
+    return mat['%s_Y_sse'%part][l,0], mat['%s_delta'%part][l,0], mat['%s_coded'%part][l,0]
 
-def findrdpoints(y_sse,delta,coded):
-    ind1 = np.argmin(y_sse,1)
+def findrdpoints(y_sse,delta,coded,lam):
+    # find the optimal quant step-size
+    y_sse[np.isnan(y_sse)] = float('inf')
+    ind1 = np.nanargmin(y_sse,1)
     ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
     ind2 = np.arange(ind1.shape[1]).reshape(1,-1).repeat(ind1.shape[0],0)
     inds = np.ravel_multi_index((ind0,ind1,ind2),y_sse.shape)
-    return y_sse.flatten(0)[inds] delta.flatten(0)[inds] coded.flatten(0)[inds]
+    y_sse = y_sse.reshape(-1)[inds]
+    delta = delta.reshape(-1)[inds]
+    coded = coded.reshape(-1)[inds]
+    # find the minimum Lagrangian cost
+    point = y_sse + lam*coded == (y_sse + lam*coded).min(0)
+
+    return np.select(point, y_sse), np.select(point, delta), np.select(point, coded)
+
 
 def loadnetwork(archname,gpuid,testsize):
     global device
@@ -58,12 +68,12 @@ def loadnetwork(archname,gpuid,testsize):
                 root='~/Developer/ILSVRC2012_devkit_t12',\
                 split='val',transform=transdata)
     images.samples = images.samples[::len(images.samples)//testsize]
-    labels = torch.tensor([images.samples[i][1] for i in range(0,len(images.samples))])
+    labels = torch.tensor([int(images.samples[i][1]) for i in range(0,len(images))])
 
     return net.to(device), images, labels.to(device)
 
 def gettrans(archname,trantype,tranname,layer):
-	file = h5py.File('%s_%s_50000_%s.mat' %(archname,tranname,trantype))
+	file = h5py.File('%s_%s_50000_%s.mat' %(archname,tranname,trantype),'r')
 	return torch.FloatTensor(file[file['T'][0,layer]]).to(device).permute([3,2,1,0])
 
 def getdevice():
@@ -96,7 +106,7 @@ def quantize(weights, delta, b):
         minpoint = 0
         maxpoint = 0
 
-    return delta*(weights//delta).clamp(minpoint,maxpoint)
+    return (delta*(weights/delta).round()).clamp(minpoint,maxpoint)
     
 def min_inds(mat,axis):
     ind1 = np.argmin(mat,axis)
@@ -113,7 +123,7 @@ def lambda2points(X,Y,Z,lam):
     points = np.zeros(Z.shape[1])
 
     for i in range(0,X.shape[1]):
-        if np.all(np.isinf(X[:,i])):
+        if np.all(np.isinf(X[:,i])) or np.all(np.isnan(X[:,i])):
             continue
         slopes = np.append(np.diff(Y[:,i])/np.diff(X[:,i]),0.0)
         points[i] = Z[:,i].argwhere(slopes<lam)[0]

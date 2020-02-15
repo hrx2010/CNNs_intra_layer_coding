@@ -96,7 +96,7 @@ for l in range(0,len(layers)):
                     last_W_sse = mean_W_sse
         layers[l].weight[:] = layer_weights[:].permute(inv(flip)).reshape(dimen_weights).\
                               permute(inv(perm)).reshape(layers[l].weight.size())
-        scipy.io.savemat(('%s_%s_val_%03d_%04d_output_%s_kern.mat' % (archname,tranname,l,testsize,trantype)),\
-                         {'kern_coded':kern_coded.to('cpu').numpy(),'kern_Y_sse':kern_Y_sse.to('cpu').numpy(),\
-                          'kern_Y_top':kern_Y_top.to('cpu').numpy(),'kern_delta':kern_delta.to('cpu').numpy(),\
-                          'kern_W_sse':kern_W_sse.to('cpu').numpy()})
+        io.savemat(('%s_%s_val_%03d_%04d_output_%s_kern.mat' % (archname,tranname,l,testsize,trantype)),\
+                   {'kern_coded':kern_coded.cpu().numpy(),'kern_Y_sse':kern_Y_sse.cpu().numpy(),\
+                    'kern_Y_top':kern_Y_top.cpu().numpy(),'kern_delta':kern_delta.cpu().numpy(),\
+                    'kern_W_sse':kern_W_sse.cpu().numpy()})
