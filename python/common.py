@@ -68,13 +68,13 @@ def loadnetwork(archname,gpuid,testsize):
                 root='~/Developer/ILSVRC2012_devkit_t12',\
                 split='val',transform=transdata)
     images.samples = images.samples[::len(images.samples)//testsize]
-    labels = torch.tensor([int(images.samples[i][1]) for i in range(0,len(images))])
+    labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
 
     return net.to(device), images, labels.to(device)
 
 def gettrans(archname,trantype,tranname,layer):
 	file = h5py.File('%s_%s_50000_%s.mat' %(archname,tranname,trantype),'r')
-	return torch.FloatTensor(file[file['T'][0,layer]]).to(device).permute([3,2,1,0])
+	return torch.FloatTensor(file[file['T'][0,layer]]).permute([3,2,1,0]).flatten(2).to(device)
 
 def getdevice():
 	global device
