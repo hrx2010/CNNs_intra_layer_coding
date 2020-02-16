@@ -42,7 +42,7 @@ for j in range(0,maxsteps):
     with torch.no_grad():
         slope = -36 + 0.5*j
         sec = time.time()
-        for l in range(5,len(srclayers)):
+        for l in range(0,len(srclayers)):
             basis_vectors = gettrans(archname,trantype,tranname,l).flatten(2)
             layer_weights = srclayers[l].weight.clone()
             layer_weights = layer_weights.flatten(2).permute(perm)

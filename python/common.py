@@ -1,7 +1,7 @@
 import time
 import h5py
 import torch
-import scipy as np
+import numpy as np
 import scipy.io as io
 import torch.nn as nn
 import torchvision.models as models
@@ -29,10 +29,10 @@ def loadvarstats(archname,trantype,testsize):
     return np.array(mat['cov'])
 
 def loadrdcurves(archname,tranname,trantype,l,part):
-    #mat = io.loadmat('%s_%s_val_%03d_0100_output_%s_kern' % (archname,tranname,l,trantype))
-    #return mat['kern_Y_sse'], mat['kern_delta'], mat['kern_coded']
-    mat = io.loadmat('%s_%s_val_1000_%d_%d_output_%s_%s' % (archname,tranname,l+1,l+1,trantype,part))
-    return mat['%s_Y_sse'%part][l,0], mat['%s_delta'%part][l,0], mat['%s_coded'%part][l,0]
+    mat = io.loadmat('%s_%s_val_%03d_0100_output_%s_%s' % (archname,tranname,l,trantype,part))
+    return mat['%s_Y_sse'%part], mat['%s_delta'%part], mat['%s_coded'%part]
+    #mat = io.loadmat('%s_%s_val_1000_%d_%d_output_%s_%s' % (archname,tranname,l+1,l+1,trantype,part))
+    #return mat['%s_Y_sse'%part][l,0], mat['%s_delta'%part][l,0], mat['%s_coded'%part][l,0]
 
 def findrdpoints(y_sse,delta,coded,lam):
     # find the optimal quant step-size
@@ -49,6 +49,17 @@ def findrdpoints(y_sse,delta,coded,lam):
 
     return np.select(point, y_sse), np.select(point, delta), np.select(point, coded)
 
+
+def loaddataset(gpuid,testsize):
+    global device
+    device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
+    images = datasets.ImageNet(\
+                root='~/Developer/ILSVRC2012_devkit_t12',\
+                split='val',transform=transdata)
+    images.samples = images.samples[::len(images.samples)//testsize]
+    labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
+
+    return images, labels.to(device)
 
 def loadnetwork(archname,gpuid,testsize):
     global device
@@ -72,9 +83,13 @@ def loadnetwork(archname,gpuid,testsize):
 
     return net.to(device), images, labels.to(device)
 
-def gettrans(archname,trantype,tranname,layer):
-	file = h5py.File('%s_%s_50000_%s.mat' %(archname,tranname,trantype),'r')
-	return torch.FloatTensor(file[file['T'][0,layer]]).permute([3,2,1,0]).flatten(2).to(device)
+def gettrans(archname,trantype,tranname,layer,version='v7.3'):
+    if version == 'v7.3':
+        file = h5py.File('%s_%s_50000_%s.mat' %(archname,tranname,trantype),'r')
+        return torch.FloatTensor(file[file['T'][0,layer]]).permute([3,2,1,0]).flatten(2).to(device)
+    else:
+        mat = io.loadmat('%s_%s_%s_10000.mat' % (archname,trantype,tranname))
+        return torch.FloatTensor(mat['T'][0,layer]).flatten(2).to(device)
 
 def getdevice():
 	global device
@@ -116,21 +131,6 @@ def min_inds(mat,axis):
 
     return inds
 
-def lambda2points(X,Y,Z,lam):
-    X = X.flatten(1)
-    Y = Y.flatten(1)
-    Z = Z.flatten(1)
-    points = np.zeros(Z.shape[1])
-
-    for i in range(0,X.shape[1]):
-        if np.all(np.isinf(X[:,i])) or np.all(np.isnan(X[:,i])):
-            continue
-        slopes = np.append(np.diff(Y[:,i])/np.diff(X[:,i]),0.0)
-        points[i] = Z[:,i].argwhere(slopes<lam)[0]
-
-    return points
-
-
 def gettop1(logp):
     logp = logp.exp()
     logp = logp/logp.sum(1).reshape(-1,1)
@@ -143,9 +143,8 @@ def predict(net,images,batch_size=100):
     y_hat = torch.zeros(0,device=device)
     loader = torch.utils.data.DataLoader(images,batch_size=batch_size)
     with torch.no_grad():
-        for x, y in loader:
+        for x, _ in loader:
             x = x.to(device)
-            #y = y.to(device)
             y_hat = torch.cat((y_hat,net(x)))
     return y_hat
 

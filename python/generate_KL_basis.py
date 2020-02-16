@@ -4,16 +4,17 @@ import scipy.io as io
 import scipy.linalg as linalg
 import common
 
+importlib.reload(common)
 from common import * 
 
-archname = str(sys.argv[1])
-trantype = str(sys.argv[2])
-tranname = str(sys.argv[3])
+trantype = str(sys.argv[1])
+tranname = str(sys.argv[2])
+archname = str(sys.argv[3])
 testsize = int(sys.argv[4])
 
 neural, _, _ = loadnetwork(archname,gpuid,1)
 layers = common.findconv(neural,False)
-covars = common.loadvarstat(archname,trantype,testsize)
+covars = common.loadvarstats(archname,trantype,testsize)
 perm, flip = getperm(trantype)
 
 T = [None] * len(layers)
@@ -26,11 +27,12 @@ for l in range(0,len(layers)):
                         permute(perm).flatten(1).permute(flip)
         covH = np.array(layer_weights.mm(layer_weights.permute([1,0])).to('cpu'),dtype=np.float64)
         covG = np.array(covars[0,l],dtype=np.float64)
+        covG = np.linalg.inv(covG + (0.001*np.linalg.norm(covG))*np.eye(covG.shape[0]))
         if tranname == 'klt':
             _, U = linalg.eigh(covH)
         else:
             _, U = linalg.eigh(covH,covG)
-        U = np.linalg.inv(U.transpose())
+        U = np.flip(np.linalg.inv(U.transpose()),1)
         S = U/np.sqrt(np.sum(U**2,0))
         A = np.linalg.inv(S)
         T[l] = np.stack((A,S),axis=-1)
