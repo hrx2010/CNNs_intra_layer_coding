@@ -9,6 +9,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 import resnetpy
+import vggpy
 import alexnetpy
 
 device = None
@@ -65,6 +66,8 @@ def loadnetwork(archname,gpuid,testsize):
     global device
     if archname == 'alexnetpy':
         net = alexnetpy.alexnet(pretrained=True)
+    elif archname == 'vgg16py':
+        net = vggpy.vgg16_bn(pretrained=True)
     elif archname == 'resnet18py':
         net = resnetpy.resnet18(pretrained=True)
     elif archname == 'resnet34py':
@@ -138,7 +141,7 @@ def gettop1(logp):
 
     return inds
         
-def predict(net,images,batch_size=100):
+def predict(net,images,batch_size=25):
     global device
     y_hat = torch.zeros(0,device=device)
     loader = torch.utils.data.DataLoader(images,batch_size=batch_size)
@@ -165,6 +168,9 @@ def pushconv(layers,container,includenorm=True):
         pushconv(layers,container.features,includenorm)
         pushconv(layers,container.classifier,includenorm)
     elif isinstance(container, alexnetpy.AlexNet):
+        pushconv(layers,container.features,includenorm)
+        pushconv(layers,container.classifier,includenorm)
+    elif isinstance(container, vggpy.VGG):
         pushconv(layers,container.features,includenorm)
         pushconv(layers,container.classifier,includenorm)
     elif isinstance(container, torch.nn.Linear):

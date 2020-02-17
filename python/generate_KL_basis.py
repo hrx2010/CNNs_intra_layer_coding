@@ -3,6 +3,7 @@ import scipy
 import scipy.io as io
 import scipy.linalg as linalg
 import common
+import importlib
 
 importlib.reload(common)
 from common import * 
@@ -14,7 +15,6 @@ testsize = int(sys.argv[4])
 
 neural, _, _ = loadnetwork(archname,gpuid,1)
 layers = common.findconv(neural,False)
-covars = common.loadvarstats(archname,trantype,testsize)
 perm, flip = getperm(trantype)
 
 T = [None] * len(layers)
@@ -26,11 +26,14 @@ for l in range(0,len(layers)):
         layer_weights = layer_weights.reshape(m,n,-1).\
                         permute(perm).flatten(1).permute(flip)
         covH = np.array(layer_weights.mm(layer_weights.permute([1,0])).to('cpu'),dtype=np.float64)
-        covG = np.array(covars[0,l],dtype=np.float64)
-        covG = np.linalg.inv(covG + (0.001*np.linalg.norm(covG))*np.eye(covG.shape[0]))
         if tranname == 'klt':
             _, U = linalg.eigh(covH)
+        elif tranname == 'idt':
+            U = np.eye(covH.shape[0])
         else:
+            covars = common.loadvarstats(archname,trantype,testsize)
+            covG = np.array(covars[0,l],dtype=np.float64)
+            covG = np.linalg.inv(covG + (0.001*np.linalg.norm(covG))*np.eye(covG.shape[0]))
             _, U = linalg.eigh(covH,covG)
         U = np.flip(np.linalg.inv(U.transpose()),1)
         S = U/np.sqrt(np.sum(U**2,0))
