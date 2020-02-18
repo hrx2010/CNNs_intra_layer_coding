@@ -57,7 +57,7 @@ for l in range(0,len(layers)):
                 for j in range(0,maxsteps):
                     sec = time.time()
                     delta = start + 0.25*j
-                    coded = s*basis_vectors.shape[0]
+                    coded = len(rs)*basis_vectors.shape[0]
                     quant_vectors = basis_vectors.clone()
                     quant_vectors[:,rs] = quantize(quant_vectors[:,rs],2**delta,b)
                     delta_weights = (quant_vectors[:,rs]-basis_vectors[:,rs]).mm(trans_weights[rs,:])
