@@ -11,6 +11,7 @@ trantype = str(sys.argv[1])
 tranname = str(sys.argv[2])
 archname = str(sys.argv[3])
 testsize = int(sys.argv[4])
+gpuid   = gpuid if len(sys.argv) < 6 else int(sys.argv[5])
 
 maxsteps = 32
 maxrates = 17

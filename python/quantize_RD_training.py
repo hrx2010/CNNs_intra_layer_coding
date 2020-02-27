@@ -17,6 +17,7 @@ testsize = int(sys.argv[4])
 rdlambda = float(sys.argv[5])
 codebase = True if len(sys.argv) < 7 else int(sys.argv[6])
 codekern = True if len(sys.argv) < 8 else int(sys.argv[7])
+gpuid   = gpuid if len(sys.argv) < 9 else int(sys.argv[8])
 
 tarnet, images, labels = loadnetwork(archname,gpuid,testsize)
 tarnet.eval()

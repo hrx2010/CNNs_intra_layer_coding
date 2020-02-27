@@ -13,6 +13,7 @@ archname = str(sys.argv[3])
 testsize = int(sys.argv[4])
 codebase = True if len(sys.argv) < 6 else int(sys.argv[5])
 codekern = True if len(sys.argv) < 7 else int(sys.argv[6])
+gpuid   = gpuid if len(sys.argv) < 8 else int(sys.argv[7])
 
 maxsteps = 48
 maxrates = 17
