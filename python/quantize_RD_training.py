@@ -1,16 +1,13 @@
 import common
 import header
 import network
-import transconv
 import importlib
 importlib.reload(common)
 importlib.reload(header)
 importlib.reload(network)
-importlib.reload(transconv)
 
 from common import *
 from header import *
-from transconv import *
 
 trantype = str(sys.argv[1])
 tranname = str(sys.argv[2])
