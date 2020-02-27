@@ -1,9 +1,11 @@
 import common
 import header
+import network
 import transconv
 import importlib
 importlib.reload(common)
 importlib.reload(header)
+importlib.reload(network)
 importlib.reload(transconv)
 
 from common import *
@@ -19,43 +21,35 @@ codebase = True if len(sys.argv) < 7 else int(sys.argv[6])
 codekern = True if len(sys.argv) < 8 else int(sys.argv[7])
 gpuid   = gpuid if len(sys.argv) < 9 else int(sys.argv[8])
 
-tarnet, images, labels = loadnetwork(archname,gpuid,testsize)
-tarnet.eval()
-Y = predict(tarnet,images)
+neural, images, labels = loadnetwork(archname,gpuid,testsize)
+neural.eval()
+Y = predict(neural,images)
 Y_cats = gettop1(Y)
 mean_Y_top = (Y_cats == labels).double().mean()
 print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
 
-layers = findconv(tarnet,False)
-perm, flip = getperm(trantype)
+# quantize
+neural = network.quantize(neural,trantype,tranname,archname,rdlambda,codekern,codebase)
 
-with torch.no_grad():
-    for l in range(0,len(layers)):
-        basis_vectors = gettrans(archname,trantype,tranname,l,'').flatten(2)
-        layer_weights = layers[l].weight
-        layer_weights = layer_weights.flatten(2).permute(perm)
-        dimen_weights = layer_weights.size()
-        layer_weights = layer_weights.flatten(1).permute(flip)
-        trans_weights = basis_vectors[:,:,0].mm(layer_weights)
-        ##load files here
-        kern_delta = kern_coded = []
-        if codekern:
-            kern_Y_sse, kern_delta, kern_coded = loadrdcurves(archname,tranname,trantype,l, 'kern')
-            kern_Y_sse, kern_delta, kern_coded = findrdpoints(kern_Y_sse,kern_delta,kern_coded, 2**rdlambda)
-        base_delta = base_coded = []
-        if codebase:
-            base_Y_sse, base_delta, base_coded = loadrdcurves(archname,tranname,trantype,l, 'base')
-            base_Y_sse, base_delta, base_coded = findrdpoints(base_Y_sse,base_delta,base_coded, 2**rdlambda)
-            
-        stride = min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
-        basis_vectors = basis_vectors[:,:,1].permute(inv(perm[0:2]))
-        trans_weights = trans_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).reshape(layers[l].weight.size())
-        layers[l] = transconv.TransConv2d(basis_vectors,trans_weights,layers[l].bias,layers[l].stride,layers[l].padding,\
-                                          trantype,stride,kern_coded,kern_delta,base_coded,base_delta,codekern,codebase)
+epochs = 40
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(neural.parameters(),lr=0.001, weight_decay=0.0001, momentum=0.9)
 
-    tarnet = replaceconv(tarnet,layers,includenorm=False).to(common.device)
+neural.train()
+for i in range(0,epochs):
+    dataloader = torch.utils.data.DataLoader(images,batch_size=50)
+    for x, y in dataloader:
+        x = x.to(common.device)
+        y = y.to(common.device)
+        y_hat = neural(x)
+        loss = criterion(y_hat,y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-Y_hats = predict(tarnet.to(common.device),images)
+
+neural.eval()
+Y_hats = predict(neural.to(common.device),images)
 Y_cats = gettop1(Y_hats)
 hist_sum_Y_sse = ((Y_hats - Y)**2).mean()
 hist_sum_Y_top = (Y_cats == labels).double().mean()

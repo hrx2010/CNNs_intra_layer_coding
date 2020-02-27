@@ -1,4 +1,8 @@
-def quantize(network,trantype,tranname,rdlambda):
+import transconv
+import common
+from common import *
+
+def quantize(network,trantype,tranname,archname,rdlambda,codekern,codebase):
     layers = findconv(network,False)
     perm, flip = getperm(trantype)
 

@@ -1,6 +1,7 @@
 import time
 import h5py
 import torch
+import torch.optim as optim
 import numpy as np
 import scipy.io as io
 import torch.nn as nn
@@ -180,7 +181,6 @@ def pushlist(layers,container,attr,includenorm,direction):
         else:
             container[attr] = layers[0][0]
             layers[0] = layers[0][1:len(layers[0])]
-            print(len(layers[0]))
     else:
         pushconv(layers,container[attr],includenorm,direction)
 
