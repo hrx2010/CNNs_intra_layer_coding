@@ -55,7 +55,7 @@ with torch.no_grad():
 
     tarnet = replaceconv(tarnet,layers,includenorm=False).to(common.device)
 
-Y_hats = predict(tarnet,images)
+Y_hats = predict(tarnet.to(common.device),images)
 Y_cats = gettop1(Y_hats)
 hist_sum_Y_sse = ((Y_hats - Y)**2).mean()
 hist_sum_Y_top = (Y_cats == labels).double().mean()

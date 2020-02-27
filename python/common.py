@@ -169,7 +169,6 @@ def pushattr(layers,container,attr,includenorm,direction):
         else:
             setattr(container,attr,layers[0][0])
             layers[0] = layers[0][1:len(layers[0])]
-            print(len(layers[0]))
 
 def pushlist(layers,container,attr,includenorm,direction):
     if isinstance(container[attr], torch.nn.Linear) or \
