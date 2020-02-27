@@ -11,10 +11,11 @@ trantype = str(sys.argv[1])
 tranname = str(sys.argv[2])
 archname = str(sys.argv[3])
 testsize = int(sys.argv[4])
+codebase = True if len(sys.argv) < 6 else int(sys.argv[5])
+codekern = True if len(sys.argv) < 7 else int(sys.argv[6])
+
 maxsteps = 48
 maxrates = 17
-codebase = True if len(sys.argv) < 6 else bool(sys.argv[5])
-codekern = True if len(sys.argv) < 7 else bool(sys.argv[6])
 
 srcnet, images, labels = loadnetwork(archname,gpuid,testsize)
 tarnet, images, labels = loadnetwork(archname,gpuid,testsize)
@@ -41,7 +42,7 @@ for j in range(0,maxsteps):
     hist_sum_W_sse[j] = hist_sum_Y_sse[j] = pred_sum_Y_sse[j] = 0.0
     hist_sum_coded[j] = hist_sum_Y_top[j] = hist_sum_denom[j] = 0.0
     with torch.no_grad():
-        slope = -33 + 0.5*j
+        slope = -29 + 0.5*j
         sec = time.time()
         for l in range(0,len(srclayers)):
             basis_vectors = gettrans(archname,trantype,tranname,l,'').flatten(2)

@@ -23,8 +23,7 @@ for l in range(0,len(layers)):
         layer_weights = layers[l].weight
         m = layer_weights.size(0)
         n = layer_weights.size(1)
-        layer_weights = layer_weights.reshape(m,n,-1).\
-                        permute(perm).flatten(1).permute(flip)
+        layer_weights = layer_weights.flatten(2).permute(perm).flatten(1).permute(flip)
         covH = np.array(layer_weights.mm(layer_weights.permute([1,0])).to('cpu'),dtype=np.float64)
         if tranname == 'klt':
             _, U = linalg.eigh(covH)

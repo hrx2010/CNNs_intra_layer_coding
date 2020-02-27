@@ -151,67 +151,82 @@ def predict(net,images,batch_size=25):
             y_hat = torch.cat((y_hat,net(x)))
     return y_hat
 
+def replaceconv(net,layers,includenorm=True):
+    pushconv([layers],net,includenorm,direction=1)
+    return net
+
 def findconv(net,includenorm=True):
-        layers = pushconv([],net,includenorm)
-        return layers
-
-def pushconv(layers,container,includenorm=True):
-    if isinstance(container, resnetpy.ResNet):
-        pushconv(layers,container.conv1,includenorm)
-        pushconv(layers,container.bn1,includenorm)
-        pushconv(layers,container.layer1,includenorm)
-        pushconv(layers,container.layer2,includenorm)
-        pushconv(layers,container.layer3,includenorm)
-        pushconv(layers,container.layer4,includenorm)
-        pushconv(layers,container.fc,includenorm)
-    elif isinstance(container, models.mobilenet.MobileNetV2):
-        pushconv(layers,container.features,includenorm)
-        pushconv(layers,container.classifier,includenorm)
-    elif isinstance(container, alexnetpy.AlexNet):
-        pushconv(layers,container.features,includenorm)
-        pushconv(layers,container.classifier,includenorm)
-    elif isinstance(container, vggpy.VGG):
-        pushconv(layers,container.features,includenorm)
-        pushconv(layers,container.classifier,includenorm)
-    elif isinstance(container, torch.nn.Linear):
-        layers.append(container)
-    elif isinstance(container, torch.nn.Conv2d):
-        layers.append(container)
-    elif isinstance(container, resnetpy.BasicBlock):
-        pushconv(layers,container.conv1,includenorm)
-        pushconv(layers,container.bn1,includenorm)
-        pushconv(layers,container.conv2,includenorm)
-        pushconv(layers,container.bn2,includenorm)
-        if isinstance(container.downsample,torch.nn.Sequential):
-            pushconv(layers,container.downsample[0],includenorm)
-            pushconv(layers,container.downsample[1],includenorm)
-    elif isinstance(container, resnetpy.Bottleneck):
-        pushconv(layers,container.conv1,includenorm)
-        pushconv(layers,container.bn1,includenorm)
-        pushconv(layers,container.conv2,includenorm)
-        pushconv(layers,container.bn2,includenorm)
-        pushconv(layers,container.conv3,includenorm)
-        if isinstance(container.downsample,torch.nn.Sequential):
-            pushconv(layers,container.downsample[0],includenorm)
-        pushconv(layers,container.bn3,includenorm)
-        if isinstance(container.downsample,torch.nn.Sequential):
-            pushconv(layers,container.downsample[1],includenorm)
-        # if isinstance(container.downsample,torch.nn.Sequential):
-        #     pushconv(layers,container.downsample[0])
-        #     pushconv(layers,container.downsample[1])
-    elif isinstance(container, torch.nn.modules.batchnorm.BatchNorm2d) and includenorm:
-        layers.append(container)
-    elif isinstance(container,torch.nn.Sequential):
-        for l in range(0,len(container)):
-            pushconv(layers,container[l],includenorm)
-    elif isinstance(container, models.mobilenet.ConvBNReLU):
-        for l in range(0,len(container.conv)):
-            pushconv(layers,container.conv[l],includenorm)
-    elif isinstance(container, models.mobilenet.InvertedResidual):
-        for l in range(0,len(container.conv)):
-            pushconv(layers,container.conv[l],includenorm)
-
+    layers = pushconv([[]],net,includenorm)
     return layers
+
+def pushattr(layers,container,attr,includenorm,direction):
+    if isinstance(getattr(container,attr), torch.nn.Linear) or \
+       isinstance(getattr(container,attr), torch.nn.Conv2d) or \
+       isinstance(getattr(container,attr), torch.nn.modules \
+                  .batchnorm.BatchNorm2d) and includenorm:
+        if direction == 0:
+            layers[0].append(getattr(container,attr))
+        else:
+            setattr(container,attr,layers[0][0])
+            layers[0] = layers[0][1:len(layers[0])]
+            print(len(layers[0]))
+
+def pushlist(layers,container,attr,includenorm,direction):
+    if isinstance(container[attr], torch.nn.Linear) or \
+       isinstance(container[attr], torch.nn.Conv2d) or \
+       isinstance(container[attr], torch.nn.modules \
+                  .batchnorm.BatchNorm2d) and includenorm:
+        if direction == 0:
+            layers[0].append(container[attr])
+        else:
+            container[attr] = layers[0][0]
+            layers[0] = layers[0][1:len(layers[0])]
+            print(len(layers[0]))
+    else:
+        pushconv(layers,container[attr],includenorm,direction)
+
+def pushconv(layers,container,includenorm=True,direction=0):
+    if isinstance(container,resnetpy.ResNet):
+        pushattr(layers,container,'conv1',includenorm,direction)
+        pushattr(layers,container,'bn1',includenorm,direction)
+        pushconv(layers,container.layer1,includenorm,direction)
+        pushconv(layers,container.layer2,includenorm,direction)
+        pushconv(layers,container.layer3,includenorm,direction)
+        pushconv(layers,container.layer4,includenorm,direction)
+        pushattr(layers,container,'fc',includenorm,direction)
+    elif isinstance(container, alexnetpy.AlexNet):
+        pushconv(layers,container.features,includenorm,direction)
+        pushconv(layers,container.classifier,includenorm,direction)
+    elif isinstance(container, vggpy.VGG):
+        pushconv(layers,container.features,includenorm,direction)
+        pushconv(layers,container.classifier,includenorm,direction)
+    elif isinstance(container, resnetpy.BasicBlock):
+        pushattr(layers,container,'conv1',includenorm,direction)
+        pushattr(layers,container,'bn1',includenorm,direction)
+        pushattr(layers,container,'conv2',includenorm,direction)
+        pushattr(layers,container,'bn2',includenorm,direction)
+        pushconv(layers,container.downsample,includenorm,direction)
+    elif isinstance(container, resnetpy.Bottleneck):
+        pushattr(layers,container,'conv1',includenorm,direction)
+        pushattr(layers,container,'bn1',includenorm,direction)
+        pushattr(layers,container,'conv2',includenorm,direction)
+        pushattr(layers,container,'bn2',includenorm,direction)
+        pushattr(layers,container,'conv3',includenorm,direction)
+        pushattr(layers,container,'bn3',includenorm,direction)
+        pushconv(layers,container.downsample,includenorm,direction)
+    elif isinstance(container,torch.nn.Sequential):
+        for attr in range(0,len(container)):
+            pushlist(layers,container,attr,includenorm,direction)
+    # elif isinstance(container, models.mobilenet.ConvBNReLU):
+    #      for l in range(0,len(container.conv)):
+    #          pushlist(layers,container.conv,attr,includenorm)
+    # elif isinstance(container, models.mobilenet.MobileNetV2):
+    #     pushconv(layers,container.features,includenorm,direction)
+    #     pushconv(layers,container.classifier,includenorm,direction)
+    # elif isinstance(container, models.mobilenet.InvertedResidual):
+    #     for l in range(0,len(container.conv)):
+    #         pushconv(layers,ptrids,container.conv[l],includenorm)
+    return layers[0]
 
 def permute(layer,dimen):
     if isinstance(layer, torch.nn.Conv2d):
