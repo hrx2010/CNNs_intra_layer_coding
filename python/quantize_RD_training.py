@@ -28,7 +28,7 @@ print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
 # quantize
 neural = network.quantize(neural,trantype,tranname,archname,rdlambda,codekern,codebase)
 
-epochs = 40
+epochs = 0
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(neural.parameters(),lr=0.001, weight_decay=0.0001, momentum=0.9)
 
