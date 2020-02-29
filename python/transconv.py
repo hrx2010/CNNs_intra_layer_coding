@@ -28,7 +28,7 @@ class TransConv2d(nn.Module):
             with torch.no_grad():
                 self.conv1.weight[:] = kern.reshape(self.conv1.weight.shape)
                 self.conv2.weight[:] = base.reshape(self.conv2.weight.shape)
-                self.conv2.bias[:] = bias
+                self.conv2.bias = bias
                 self.conv1_delta = kern_delta
                 self.conv2_delta = base_delta
                 self.conv1_coded = kern_coded
@@ -38,6 +38,8 @@ class TransConv2d(nn.Module):
 
     def forward(self, x):
         with torch.no_grad():
+            conv1_weight = self.conv1.weight[:].clone() #save unquantized weights for later
+            conv2_weight = self.conv2.weight[:].clone() #save unquantized weights for later
             for i in range(0,self.conv1.weight.shape[0],self.stride):
                 rs = range(i,min(i+self.stride,self.conv1.weight.shape[0]))
                 scale = (self.conv1.weight[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
@@ -54,4 +56,9 @@ class TransConv2d(nn.Module):
                                                        self.conv2_coded[i]/self.conv2.weight[:,rs].numel())
         x = self.conv1(x)
         x = self.conv2(x)
+
+        with torch.no_grad():
+            self.conv1.weight[:] = conv1_weight
+            self.conv2.weight[:] = conv2_weight
+
         return x

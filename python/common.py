@@ -193,6 +193,10 @@ def pushconv(layers,container,includenorm=True,direction=0):
         pushconv(layers,container.layer3,includenorm,direction)
         pushconv(layers,container.layer4,includenorm,direction)
         pushattr(layers,container,'fc',includenorm,direction)
+    # elif isinstance(container,densenetpy.DenseNet):
+    #     pushattr(layers,container,'conv0',includenorm,direction)
+    #     pushconv(layers,container.features,includenorm,direction)
+    #     pushattr(layers,container,'classifier',includenorm,direction)
     elif isinstance(container, alexnetpy.AlexNet):
         pushconv(layers,container.features,includenorm,direction)
         pushconv(layers,container.classifier,includenorm,direction)
@@ -213,6 +217,11 @@ def pushconv(layers,container,includenorm=True,direction=0):
         pushattr(layers,container,'conv3',includenorm,direction)
         pushattr(layers,container,'bn3',includenorm,direction)
         pushconv(layers,container.downsample,includenorm,direction)
+    # elif isinstance(container, densenetpy._DenseLayer):
+    #     pushattr(layers,container,'norm1',includenorm,direction)
+    #     pushattr(layers,container,'conv1',includenorm,direction)
+    #     pushattr(layers,container,'norm2',includenorm,direction)
+    #     pushattr(layers,container,'conv2',includenorm,direction)
     elif isinstance(container,torch.nn.Sequential):
         for attr in range(0,len(container)):
             pushlist(layers,container,attr,includenorm,direction)
