@@ -19,6 +19,7 @@ codekern = True if len(sys.argv) < 8 else int(sys.argv[7])
 gpuid   = gpuid if len(sys.argv) < 9 else int(sys.argv[8])
 
 neural, images, labels = loadnetwork(archname,gpuid,testsize)
+neural = network.transform(neural,trantype,tranname,archname,rdlambda,codekern,codebase)
 neural.eval()
 Y = predict(neural,images)
 Y_cats = gettop1(Y)
@@ -26,9 +27,8 @@ mean_Y_top = (Y_cats == labels).double().mean()
 print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
 
 # quantize
-neural = network.quantize(neural,trantype,tranname,archname,rdlambda,codekern,codebase)
 
-epochs = 0
+epochs = 100
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(neural.parameters(),lr=0.001, weight_decay=0.0001, momentum=0.9)
 
@@ -40,12 +40,14 @@ for i in range(0,epochs):
         y = y.to(common.device)
         y_hat = neural(x)
         loss = criterion(y_hat,y)
+        print(loss)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
 
 neural.eval()
+neural = network.quantize(neural)
 Y_hats = predict(neural.to(common.device),images)
 Y_cats = gettop1(Y_hats)
 hist_sum_Y_sse = ((Y_hats - Y)**2).mean()

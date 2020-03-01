@@ -2,7 +2,7 @@ import transconv
 import common
 from common import *
 
-def quantize(network,trantype,tranname,archname,rdlambda,codekern,codebase):
+def transform(network,trantype,tranname,archname,rdlambda,codekern,codebase):
     layers = findconv(network,False)
     perm, flip = getperm(trantype)
 
@@ -33,3 +33,12 @@ def quantize(network,trantype,tranname,archname,rdlambda,codekern,codebase):
         network = replaceconv(network,layers,includenorm=False)
 
     return network.to(common.device)
+
+def quantize(network):
+    layers = findconv(network,False)
+    with torch.no_grad():
+        for l in range(0,len(layers)):
+            layers[l].quantize()
+
+    return network.to(common.device)
+

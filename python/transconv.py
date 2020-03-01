@@ -1,64 +1,87 @@
 import torch
 import torch.nn as nn
-from common import *
+import common
+from header import *
 
 class TransConv2d(nn.Module):
-    def __init__(self, base, kern, bias, stride, padding, trantype, skip, \
+    def __init__(self, base, kern, bias, stride, padding, trantype, block, \
                  kern_coded, kern_delta, base_coded, base_delta, codekern, codebase):
         super(TransConv2d, self).__init__()
-        self.stride = skip
+
         if trantype == 'inter':
-            self.conv1 = nn.Conv2d(base.shape[1],base.shape[0],kernel_size=1,bias=False)
-            self.conv2 = nn.Conv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],\
-                                   stride=stride,padding=padding)
+            self.conv1 = QuantConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=False,\
+                                     delta=base_delta,coded=base_coded,block=block,is_coded=codebase)
+            self.conv2 = QuantConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],perm=True,\
+                                     stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
+                                     block=block,is_coded=codekern)
             with torch.no_grad():
                 self.conv1.weight[:] = base.reshape(self.conv1.weight.shape)
                 self.conv2.weight[:] = kern.reshape(self.conv2.weight.shape)
                 self.conv2.bias = bias
-                self.conv1_delta = base_delta
-                self.conv2_delta = kern_delta
-                self.conv1_coded = base_coded
-                self.conv2_coded = kern_coded
-                self.codeconv1 = codebase
-                self.codeconv2 = codekern
         elif trantype == 'exter':
-            self.conv1 = nn.Conv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],\
-                                   stride=stride,padding=padding,bias=False)
-            self.conv2 = nn.Conv2d(base.shape[1],base.shape[0],kernel_size=1)
+            self.conv1 = QuantConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=False,\
+                                     stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
+                                     block=block,is_coded=codekern)
+            self.conv2 = QuantConv2d(base.shape[1],base.shape[0],kernel_size=1,perm=True,\
+                                     delta=base_delta,coded=base_coded,block=block,is_coded=codebase)
             with torch.no_grad():
                 self.conv1.weight[:] = kern.reshape(self.conv1.weight.shape)
                 self.conv2.weight[:] = base.reshape(self.conv2.weight.shape)
                 self.conv2.bias = bias
-                self.conv1_delta = kern_delta
-                self.conv2_delta = base_delta
-                self.conv1_coded = kern_coded
-                self.conv2_coded = base_coded
-                self.codeconv1 = codekern
-                self.codeconv2 = codebase 
 
     def forward(self, x):
-        with torch.no_grad():
-            conv1_weight = self.conv1.weight[:].clone() #save unquantized weights for later
-            conv2_weight = self.conv2.weight[:].clone() #save unquantized weights for later
-            for i in range(0,self.conv1.weight.shape[0],self.stride):
-                rs = range(i,min(i+self.stride,self.conv1.weight.shape[0]))
-                scale = (self.conv1.weight[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
-                if scale < -24.0:
-                    self.conv1.weight[rs,:] = 0.0
-                if self.codeconv1:
-                    self.conv1.weight[rs,:] = quantize(self.conv1.weight[rs,:],2**self.conv1_delta[i],\
-                                                       self.conv1_coded[i]/self.conv1.weight[rs,:].numel())
-                scale = (self.conv2.weight[:,rs].reshape(-1)**2).mean().sqrt().log2().floor()
-                if scale < -24.0:
-                    self.conv2.weight[:,rs] = 0.0
-                if self.codeconv2:
-                    self.conv2.weight[:,rs] = quantize(self.conv2.weight[:,rs],2**self.conv2_delta[i],\
-                                                       self.conv2_coded[i]/self.conv2.weight[:,rs].numel())
+        
         x = self.conv1(x)
         x = self.conv2(x)
 
-        with torch.no_grad():
-            self.conv1.weight[:] = conv1_weight
-            self.conv2.weight[:] = conv2_weight
-
         return x
+
+    def quantize(self):
+        self.conv1.quantize()
+        self.conv2.quantize()
+
+
+class QuantConv2d(nn.Conv2d):
+    def __init__(self, in_channels, out_channels, kernel_size, delta, coded, block,\
+                 is_coded, stride=1, padding=0, bias=False, perm=False):
+        super(QuantConv2d, self).__init__(in_channels, out_channels, kernel_size,\
+                                          stride=stride,padding=padding,bias=bias)
+        self.delta = delta
+        self.coded = coded
+        self.block = block
+        self.perm = perm
+        self.is_coded = is_coded
+        self.quant = Quantize.apply
+
+    def forward(self, input):
+        return self.conv2d_forward(input, self.quant(self.weight,self.delta,self.coded,self.block,self.perm,\
+                                                        self.is_coded))
+
+    def quantize(self):
+        self.quant(self.weight,self.delta,self.coded,self.block,self.perm,self.is_coded,True)
+
+
+class Quantize(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, weight, delta, coded, block, perm, iscoded=True, inplace=False):
+        if not iscoded:
+            return weight
+
+        quant = weight.clone()
+        if perm:
+            quant = quant.permute([1,0,2,3])
+        for i in range(0,quant.shape[0],block):
+            rs = range(i,min(i+block,quant.shape[0]))
+            scale = (quant[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
+            if coded[i] == Inf:
+                continue
+            quant[rs,:] = common.quantize(quant[rs,:],2**delta[i],coded[i]/quant[rs,:].numel())
+        if perm:
+            quant = quant.permute([1,0,2,3])
+
+        if inplace:
+            weight[:] = quant
+        return quant
+
+    def backward(ctx, grad_output):
+        return grad_output, None, None, None, None, None
