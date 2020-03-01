@@ -8,6 +8,7 @@ import torch.nn as nn
 import torchvision.models as models
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+import transconv
 
 import resnetpy
 import vggpy
@@ -163,6 +164,7 @@ def findconv(net,includenorm=True):
 def pushattr(layers,container,attr,includenorm,direction):
     if isinstance(getattr(container,attr), torch.nn.Linear) or \
        isinstance(getattr(container,attr), torch.nn.Conv2d) or \
+       isinstance(getattr(container,attr), transconv.TransConv2d) or \
        isinstance(getattr(container,attr), torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
         if direction == 0:
@@ -174,6 +176,7 @@ def pushattr(layers,container,attr,includenorm,direction):
 def pushlist(layers,container,attr,includenorm,direction):
     if isinstance(container[attr], torch.nn.Linear) or \
        isinstance(container[attr], torch.nn.Conv2d) or \
+       isinstance(container[attr], transconv.TransConv2d) or \
        isinstance(container[attr], torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
         if direction == 0:
