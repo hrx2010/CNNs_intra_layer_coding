@@ -1,20 +1,31 @@
 clear all; 
 close all; 
 
-load alexnet_idt_val_100_output_inter_kern.mat
+load ../matlab/alexnet_idt_val_1000_output_inter_kern.mat
 
-map = vega10;
-map(10,:) = 0.5;
+map = get(gca,'colororder');
+map = map([4,1,3],:);
+map(3,:) = 0.5*[1,1,1];
 
-k = 3; 
+k = 9; 
 y_sse = squeeze(kern_Y_sse{1}(k,:,1)');
 w_sse = squeeze(kern_W_sse{1}(k,:,1)');
 delta = squeeze(kern_delta{1}(k,:,1)');
-loglog(2.^delta,y_sse/1000/4,'Color',0.5*[1,1,1]);
-hold on;
-loglog(2.^delta,w_sse/4,'Color',0*[1,1,1]);
+y_sse = [y_sse(1);y_sse];
+w_sse = [w_sse(1);w_sse];
+delta = [delta(1)-1;delta];
+[min_y_sse,arg_y_sse] = min(y_sse);
+[min_w_sse,arg_w_sse] = min(w_sse);
 
-axis([10^-3,10^-0,10^-5,10^-1]);
+loglog(2.^delta,y_sse/1000/4,'Color',map(1,:),'LineWidth',0.75);
+hold on;
+loglog(2.^delta,w_sse/4,'Color',0.5*[1,1,1],'LineWidth',0.75);
+hold on;
+loglog(2.^delta(arg_y_sse),min_y_sse/1000/4,'.','MarkerSize',6,'Color',map(1,:))
+hold on;
+loglog(2.^delta(arg_w_sse),min_w_sse/4,'.','MarkerSize',6,'Color',0.5*[1,1,1],'LineWidth',0.75);
+
+axis([10^-4,10^-1,10^-7,10^-3]);
 
 set(gcf,'Color','none');
 grid on;
