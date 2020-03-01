@@ -24,7 +24,7 @@ neural.eval()
 Y = predict(neural,images)
 Y_cats = gettop1(Y)
 mean_Y_top = (Y_cats == labels).double().mean()
-print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
+print('%s %s | slope: %+5.1f, top1: %5.2f' % (archname, tranname, rdlambda, 100*hist_sum_Y_top))
 
 # quantize
 

@@ -43,7 +43,7 @@ for j in range(0,maxsteps):
     hist_sum_W_sse[j] = hist_sum_Y_sse[j] = pred_sum_Y_sse[j] = 0.0
     hist_sum_coded[j] = hist_sum_Y_top[j] = hist_sum_denom[j] = 0.0
     with torch.no_grad():
-        slope = -29 + 0.5*j
+        slope = -34 + 0.5*j
         sec = time.time()
         for l in range(0,len(srclayers)):
             basis_vectors = gettrans(archname,trantype,tranname,l,'').flatten(2)
@@ -64,7 +64,7 @@ for j in range(0,maxsteps):
             for i in range(0,trans_weights.shape[0],stride):
                 rs = range(i,min(i+stride,trans_weights.shape[0]))
                 scale = (trans_weights[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
-                if scale < -24:
+                if scale < -20:
                     continue
                 if codekern:
                     trans_weights[rs,:] = quantize(trans_weights[rs,:],2**kern_delta[i],\

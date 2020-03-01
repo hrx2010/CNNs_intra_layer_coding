@@ -47,7 +47,7 @@ for l in range(0,len(layers)):
         for i in range(0,trans_weights.shape[0],s):
             rs = range(i,min(i+s,trans_weights.shape[0]))
             scale = (trans_weights[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
-            if scale < -24:
+            if scale < -20:
                 continue
             scale = (trans_weights[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
 

@@ -19,25 +19,24 @@ neural, images, labels = loadnetwork(archname,gpuid,testsize)
 layers = findconv(neural,False)
 perm, flip = getperm(trantype)
 
+gainw = [None] * len(layers)
+gaing = [None] * len(layers)
 for l in range(0,len(layers)):
-    G = np.array(loadvarstats(archname,trantype,testsize)[0,l],dtype=np.float64);
+    G = torch.tensor(loadvarstats(archname,trantype,testsize)[0,l]).to(common.device);
     G = G/G.max()
     W = layers[l].weight.flatten(2).permute(perm).flatten(1).permute(flip)
     W = W/W.max()
     U = gettrans(archname,trantype,tranname,l,'').flatten(2)
-    U[:,:,0].mm(W.mm(W.permute([1,0]))).mm(U[:,:,1])
 
-# for l = 1:6%length(layers)
-#     G = cov{l};
-#     G = G./max(G(:));
-#     W = net.Layers(layers(l)).Weights;
-#     W = permute(W,[3,1,2,4])./max(W(:));
-#     W = W(:,:);
-#     U = T{l};
+    Dwklt = U[:,:,0].mm(W.mm(W.permute([1,0]))).mm(U[:,:,1]).diag()
+    Dgklt = U[:,:,0].mm(G).mm(U[:,:,1]).diag()
+    Dwidt = W.mm(W.permute([1,0])).diag()
+    Dgidt = G.diag()
 
-#     Dklt = sort(diag(U(:,:,1)*(W*W')*U(:,:,2)).*diag(U(:,:,1)*G*U(:,:,2)),'desc');
-#     Didt = sort(diag(W*W').*diag(G),'desc');
-#     gains(l) = geomean(Didt)/geomean(Dklt);
-# end
+    gainw[l] = (10*(Dwidt.log().mean().exp()/Dwklt.log().mean().exp()).log10().detach().cpu()).numpy()
+    gaing[l] = (10*(Dgidt.log().mean().exp()/Dgklt.log().mean().exp()).log10().detach().cpu()).numpy()
 
-# semilogy(1:6,gains);
+    print('%s %s | layer: %03d/%03d, coding gain: %5.2f %5.2f (%5.2f) dB' %\
+          (archname, tranname, l, len(layers), gainw[l], gaing[l], gainw[l] + gaing[l]))
+
+io.savemat(('%s_%s_%s_gain_%04d.mat' % (archname,trantype,tranname,testsize)),{'gainw':gainw,'gaing':gaing})

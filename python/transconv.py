@@ -74,6 +74,7 @@ class Quantize(torch.autograd.Function):
             rs = range(i,min(i+block,quant.shape[0]))
             scale = (quant[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
             if coded[i] == Inf:
+                quant[rs,:] = 0
                 continue
             quant[rs,:] = common.quantize(quant[rs,:],2**delta[i],coded[i]/quant[rs,:].numel())
         if perm:
