@@ -191,8 +191,8 @@ class DenseNet(nn.Module):
         features = self.features(x)
         out = F.relu(features, inplace=True)
         out = F.adaptive_avg_pool2d(out, (1, 1))
-        out = torch.flatten(out, 1)
         out = self.classifier(out)
+        out = torch.flatten(out, 1)
         return out
 
 
