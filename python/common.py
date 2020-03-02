@@ -103,6 +103,17 @@ def getdevice():
 	global device
 	return device
 
+def getstride(trantype,tranname,archname,tensorsize):
+    rows = int(np.ceil(tensorsize[0]/8))
+    cols = int(np.ceil(tensorsize[1]/8))
+
+    if tranname == 'idt':
+        return min(rows,rows)
+    elif tranname == 'klt':
+        return min(rows,cols)
+    elif tranname == 'ekt':
+        return min(rows,cols)
+
 def getperm(trantype,dir=1):
     if trantype == 'inter':
         return [1,0,2], [0,1]
