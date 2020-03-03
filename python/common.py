@@ -210,7 +210,7 @@ def pushconv(layers,container,includenorm=True,direction=0):
         pushconv(layers,container.layer3,includenorm,direction)
         pushconv(layers,container.layer4,includenorm,direction)
         pushattr(layers,container,'fc',includenorm,direction)
-    elif isinstance(container,densenetpy.DenseNet):
+    elif isinstance(container,models.densenet.DenseNet):
         pushconv(layers,container.features,includenorm,direction)
         pushattr(layers,container,'classifier',includenorm,direction)
     elif isinstance(container, alexnetpy.AlexNet):
@@ -233,16 +233,16 @@ def pushconv(layers,container,includenorm=True,direction=0):
         pushattr(layers,container,'conv3',includenorm,direction)
         pushattr(layers,container,'bn3',includenorm,direction)
         pushconv(layers,container.downsample,includenorm,direction)
-    elif isinstance(container, densenetpy._DenseBlock):
+    elif isinstance(container, models.densenet._DenseBlock):
         for l in range(0,25):
             if hasattr(container,'denselayer%d'%l):
                 pushconv(layers,getattr(container,'denselayer%d'%l),includenorm,direction)
-    elif isinstance(container, densenetpy._DenseLayer):
+    elif isinstance(container, models.densenet._DenseLayer):
         pushattr(layers,container,'norm1',includenorm,direction)
         pushattr(layers,container,'conv1',includenorm,direction)
         pushattr(layers,container,'norm2',includenorm,direction)
         pushattr(layers,container,'conv2',includenorm,direction)
-    elif isinstance(container, densenetpy._Transition):
+    elif isinstance(container, models.densenet._Transition):
         pushattr(layers,container,'norm',includenorm,direction)
         pushattr(layers,container,'conv',includenorm,direction)
     elif isinstance(container,torch.nn.Sequential):
