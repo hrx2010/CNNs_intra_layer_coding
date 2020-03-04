@@ -66,7 +66,7 @@ class QuantConv2d(nn.Conv2d):
 
     def quantize(self):
         if self.is_coded:
-            self.quant(self.weight,self.delta,self.coded,self.block,self.perm,inplace=True)
+            self.quant(self.weight,self.delta,self.coded,self.block,self.perm,True)
 
 
 class Quantize(torch.autograd.Function):
