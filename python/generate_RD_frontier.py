@@ -38,6 +38,7 @@ pred_sum_Y_sse = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_coded = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_denom = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_Y_top = torch.ones(maxsteps,device=getdevice()) * Inf
+hist_sum_non0s = torch.ones(maxsteps,len(srclayers),device=getdevice()) * Inf
 
 for j in range(0,maxsteps):
     hist_sum_W_sse[j] = hist_sum_Y_sse[j] = pred_sum_Y_sse[j] = 0.0
@@ -79,6 +80,7 @@ for j in range(0,maxsteps):
             layer_weights = basis_vectors[:,:,1].mm(trans_weights)
             layer_weights = layer_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).\
                             reshape(srclayers[l].weight.size())
+            hist_sum_non0s[j,l] = (trans_weights != 0).any(1).sum()
             hist_sum_W_sse[j] = hist_sum_W_sse[j] + ((srclayers[l].weight - layer_weights)**2).sum()
             hist_sum_denom[j] = hist_sum_denom[j] + layer_weights.numel()
             tarlayers[l].weight[:] = layer_weights
@@ -100,5 +102,6 @@ for j in range(0,maxsteps):
 io.savemat(('%s_%s_sum_%d_output_%s.mat' % (archname,tranname,testsize,trantype)),\
            {'hist_sum_Y_sse':hist_sum_Y_sse.cpu().numpy(),'hist_sum_Y_top':hist_sum_Y_top.cpu().numpy(),\
             'pred_sum_Y_sse':pred_sum_Y_sse.cpu().numpy(),'hist_sum_coded':hist_sum_coded.cpu().numpy(),\
-            'hist_sum_W_sse':hist_sum_W_sse.cpu().numpy(),'hist_sum_denom':hist_sum_denom.cpu().numpy()})
+            'hist_sum_W_sse':hist_sum_W_sse.cpu().numpy(),'hist_sum_denom':hist_sum_denom.cpu().numpy(),\
+            'hist_sum_non0s':hist_sum_non0s.cpu().numpy()});
 
