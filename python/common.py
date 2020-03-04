@@ -9,6 +9,7 @@ import torchvision.models as models
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import transconv
+import cifar10_models
 
 import resnetpy
 import vggpy
@@ -27,6 +28,9 @@ transdata = transforms.Compose(
 	 transforms.CenterCrop(224),
 	 transforms.ToTensor(),
 	 transforms.Normalize(rgb_avg, rgb_std)])
+
+transcifar10 = transforms.Normalize([0.4914, 0.4822, 0.4465],\
+                                    [0.2023, 0.1994, 0.2010])
 
 def loadvarstats(archname,trantype,testsize):
     mat = io.loadmat(('%s_%s_stats_%d.mat' % (archname, trantype, testsize)))
@@ -65,30 +69,43 @@ def loaddataset(gpuid,testsize):
 
     return images, labels.to(device)
 
-def loadnetwork(archname,gpuid,testsize):
+def loadnetwork(archname,gpuid,testsize,dataset='imagenet'):
     global device
-    if archname == 'alexnetpy':
-        net = alexnetpy.alexnet(pretrained=True)
-    elif archname == 'vgg16py':
-        net = vggpy.vgg16_bn(pretrained=True)
-    elif archname == 'resnet18py':
-        net = resnetpy.resnet18(pretrained=True)
-    elif archname == 'resnet34py':
-        net = resnetpy.resnet34(pretrained=True)
-    elif archname == 'resnet50py':
-        net = resnetpy.resnet50(pretrained=True)
-    elif archname == 'densenet121py':
-        net = densenetpy.densenet121(pretrained=True)
-    elif archname == 'mobilenetv2py':
-        net = models.mobilenet.mobilenet_v2(pretrained=True)
-        # load the dataset
     device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
-    images = datasets.ImageNet(\
-                root='~/Developer/ILSVRC2012_devkit_t12',\
-                split='val',transform=transdata)
-    images.samples = images.samples[::len(images.samples)//testsize]
-    labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
 
+    if dataset == 'imagenet':
+        if archname == 'alexnetpy':
+            net = alexnetpy.alexnet(pretrained=True)
+        elif archname == 'vgg16py':
+            net = vggpy.vgg16_bn(pretrained=True)
+        elif archname == 'resnet18py':
+            net = resnetpy.resnet18(pretrained=True)
+        elif archname == 'resnet34py':
+            net = resnetpy.resnet34(pretrained=True)
+        elif archname == 'resnet50py':
+            net = resnetpy.resnet50(pretrained=True)
+        elif archname == 'densenet121py':
+            net = densenetpy.densenet121(pretrained=True)
+        elif archname == 'mobilenetv2py':
+            net = models.mobilenet.mobilenet_v2(pretrained=True)
+        images = datasets.ImageNet(root='~/Developer/ILSVRC2012_devkit_t12',\
+                                   split='val',transform=transdata)
+        images.samples = images.samples[::len(images.samples)//testsize]
+        labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
+    elif dataset == 'cifar10':
+        if archname == 'resnet18py':
+            net = cifar10_models.resnet.resnet18(pretrained=True)
+        elif archname == 'resnet34py':
+            net = cifar10_models.resnet.resnet34(pretrained=True)
+        elif archname == 'resnet50py':
+            net = cifar10_models.resnet.resnet50(pretrained=True)
+        elif archname == 'densenet121py':
+            net = difar10_models.densenet.densenet121(pretrained=True)
+        images = datasets.CIFAR10('~/Developer/',download=True,transform=transcifar10)
+        images.data = images.data[::len(images.data)//testsize]
+        images.targets = images.targets[::len(images.targets)//testsize]
+        labels = torch.tensor([images.targets])
+        # load the dataset
     return net.to(device), images, labels.to(device)
 
 def gettrans(archname,trantype,tranname,layer,version='v7.3'):
