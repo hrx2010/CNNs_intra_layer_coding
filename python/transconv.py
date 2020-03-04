@@ -53,20 +53,25 @@ class QuantConv2d(nn.Conv2d):
         self.is_coded = is_coded
         self.quant = Quantize.apply
 
+        if not self.is_coded:
+            for param in self.parameters():
+                param.requires_grad = False
+
     def forward(self, input):
-        return self.conv2d_forward(input, self.quant(self.weight,self.delta,self.coded,self.block,self.perm,\
-                                                        self.is_coded))
+        if self.is_coded:
+            return self.conv2d_forward(input, self.quant(self.weight,self.delta,self.coded,\
+                                                         self.block,self.perm))
+        else:
+            return self.conv2d_forward(input, self.weight)
 
     def quantize(self):
-        self.quant(self.weight,self.delta,self.coded,self.block,self.perm,self.is_coded,True)
+        if self.is_coded:
+            self.quant(self.weight,self.delta,self.coded,self.block,self.perm,inplace=True)
 
 
 class Quantize(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, weight, delta, coded, block, perm, iscoded=True, inplace=False):
-        if not iscoded:
-            return weight
-
+    def forward(ctx, weight, delta, coded, block, perm, inplace=False):
         quant = weight.clone()
         if perm:
             quant = quant.permute([1,0,2,3])
