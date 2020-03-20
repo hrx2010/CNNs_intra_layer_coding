@@ -53,7 +53,7 @@ class QuantConv2d(nn.Conv2d):
         self.is_coded = is_coded
         self.quant = Quantize.apply
 
-        if not self.is_coded:
+        if True:#not self.is_coded:
             for param in self.parameters():
                 param.requires_grad = False
 
