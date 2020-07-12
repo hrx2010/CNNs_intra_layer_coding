@@ -38,13 +38,13 @@ def loadvarstats(archname,trantype,testsize):
 
 def loadrdcurves(archname,tranname,trantype,l,part):
     mat = io.loadmat('%s_%s_val_%03d_0100_output_%s_%s' % (archname,tranname,l,trantype,part))
-    return mat['%s_Y_sse'%part], mat['%s_delta'%part], mat['%s_coded'%part]
+    return mat['%s_Y_sse'%part[0:4]], mat['%s_delta'%part[0:4]], mat['%s_coded'%part[0:4]]
     #mat = io.loadmat('%s_%s_val_1000_%d_%d_output_%s_%s' % (archname,tranname,l+1,l+1,trantype,part))
     #return mat['%s_Y_sse'%part][l,0], mat['%s_delta'%part][l,0], mat['%s_coded'%part][l,0]
 
 def findrdpoints(y_sse,delta,coded,lam):
     # find the optimal quant step-size
-    y_sse[np.isnan(y_sse)] = float('inf')
+    # y_sse[np.isnan(y_sse)] = float('inf')
     ind1 = np.nanargmin(y_sse,1)
     ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
     ind2 = np.arange(ind1.shape[1]).reshape(1,-1).repeat(ind1.shape[0],0)
@@ -54,9 +54,30 @@ def findrdpoints(y_sse,delta,coded,lam):
     coded = coded.reshape(-1)[inds]
     # find the minimum Lagrangian cost
     point = y_sse + lam*coded == (y_sse + lam*coded).min(0)
+    y_sse[np.isinf(delta)] = 0
+    coded[np.isinf(delta)] = 0
+    delta[np.isinf(delta)] = 0
 
     return np.select(point, y_sse), np.select(point, delta), np.select(point, coded)
 
+def findrdpoints2(y_sse,delta,coded,lam):
+    # find the optimal quant step-size
+    # y_sse[np.isnan(y_sse)] = float('inf')
+    ind1 = np.nanargmin(y_sse,1)
+    ind0 = np.arange(ind1.shape[0]).reshape(-1,1,1).repeat(ind1.shape[1],1).repeat(ind1.shape[2],2)
+    ind2 = np.arange(ind1.shape[1]).reshape(1,-1,1).repeat(ind1.shape[0],0).repeat(ind1.shape[2],2)
+    ind3 = np.arange(ind1.shape[2]).reshape(1,1,-1).repeat(ind1.shape[0],0).repeat(ind1.shape[1],1)
+    inds = np.ravel_multi_index((ind0,ind1,ind2,ind3),y_sse.shape)
+    y_sse = y_sse.reshape(-1)[inds]
+    delta = delta.reshape(-1)[inds]
+    coded = coded.reshape(-1)[inds]
+    # find the minimum Lagrangian cost
+    point = y_sse + lam*coded == (y_sse + lam*coded).min(0)
+    y_sse[np.isinf(delta)] = 0
+    coded[np.isinf(delta)] = 0
+    delta[np.isinf(delta)] = 0
+
+    return np.select(point, y_sse), np.select(point, delta), np.select(point, coded)
 
 def loaddataset(gpuid,testsize):
     global device
@@ -158,7 +179,7 @@ def quantize(weights, delta, b):
         maxpoint = 0
 
     return (delta*(weights/delta).round()).clamp(minpoint,maxpoint)
-    
+
 def min_inds(mat,axis):
     ind1 = np.argmin(mat,axis)
     ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
@@ -195,7 +216,9 @@ def findconv(net,includenorm=True):
 def pushattr(layers,container,attr,includenorm,direction):
     if isinstance(getattr(container,attr), torch.nn.Linear) or \
        isinstance(getattr(container,attr), torch.nn.Conv2d) or \
-       isinstance(getattr(container,attr), transconv.TransConv2d) or \
+       isinstance(getattr(container,attr), transconv.Trans1dConv2d) or \
+       isinstance(getattr(container,attr), transconv.Trans2dConv2d) or \
+       isinstance(getattr(container,attr), transconv.QuantTrans2dConv2d) or \
        isinstance(getattr(container,attr), torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
         if direction == 0:
@@ -207,7 +230,9 @@ def pushattr(layers,container,attr,includenorm,direction):
 def pushlist(layers,container,attr,includenorm,direction):
     if isinstance(container[attr], torch.nn.Linear) or \
        isinstance(container[attr], torch.nn.Conv2d) or \
-       isinstance(container[attr], transconv.TransConv2d) or \
+       isinstance(container[attr], transconv.Trans1dConv2d) or \
+       isinstance(container[attr], transconv.Trans2dConv2d) or \
+       isinstance(container[attr], transconv.QuantTrans2dConv2d) or \
        isinstance(container[attr], torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
         if direction == 0:

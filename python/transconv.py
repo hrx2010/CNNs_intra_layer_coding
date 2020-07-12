@@ -3,7 +3,78 @@ import torch.nn as nn
 import common
 from header import *
 
-class TransConv2d(nn.Module):
+class Trans0dConv2d(nn.Module):
+    def __init__(self,kern, bias, stride, padding):
+        super(Trans0dConv2d, self).__init__()
+
+        self.conv1 = None
+        self.conv2 = nn.Conv2d(kern.shape[1],kern.shape[0],kernel_size=kernel.shape[2],\
+                               stride=stride,padding=padding)
+        self.conv3 = None
+
+        with torch.no_grad():
+            self.conv2.weight[:] = kern.reshape(self.conv2.weight.shape)
+
+    def forward(self, x):
+
+        x = self.conv2(x)
+
+        return x
+
+class Trans1dConv2d(nn.Module):
+    def __init__(self, base, kern, bias, stride, padding, trantype):
+        super(Trans1dConv2d, self).__init__()
+
+        if trantype == 'inter':
+            self.conv1 = nn.Conv2d(base.shape[1],base.shape[0],kernel_size=1,bias=False)
+            self.conv2 = nn.Conv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],\
+                                stride=stride,padding=padding)
+            self.conv3 = None
+
+            with torch.no_grad():
+                self.conv1.weight[:] = base.reshape(self.conv1.weight.shape)
+                self.conv2.weight[:] = kern.reshape(self.conv2.weight.shape)
+                self.conv2.bias = bias
+        elif trantype == 'exter':
+            self.conv1 = nn.Conv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=False,\
+                                stride=stride,padding=padding)
+            self.conv2 = nn.Conv2d(base.shape[1],base.shape[0],kernel_size=1)
+            with torch.no_grad():
+                self.conv1.weight[:] = kern.reshape(self.conv1.weight.shape)
+                self.conv2.weight[:] = base.reshape(self.conv2.weight.shape)
+                self.conv2.bias = bias
+
+    def forward(self, x):
+        
+        x = self.conv1(x)
+        x = self.conv2(x)
+
+        return x
+
+class Trans2dConv2d(nn.Module):
+    def __init__(self, inter, layer, exter, bias, stride, padding):
+        super(Trans2dConv2d, self).__init__()
+
+        self.conv1 = nn.Conv2d(inter.shape[1],inter.shape[0],kernel_size=1,bias=False)
+        self.conv2 = nn.Conv2d(layer.shape[1],layer.shape[0],kernel_size=layer.shape[2],\
+                               stride=stride,padding=padding,bias=False)
+        self.conv3 = nn.Conv2d(exter.shape[1],exter.shape[0],kernel_size=1)
+            
+        with torch.no_grad():
+            self.conv1.weight[:] = inter.reshape(self.conv1.weight.shape)
+            self.conv2.weight[:] = layer.reshape(self.conv2.weight.shape)
+            self.conv3.weight[:] = exter.reshape(self.conv3.weight.shape)
+            self.conv3.bias = bias
+
+    def forward(self, x):
+        
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        
+        return x
+
+class QuantTrans2dConv2d(nn.Module):
     def __init__(self, base, kern, bias, stride, padding, trantype, block, \
                  kern_coded, kern_delta, base_coded, base_delta, codekern, codebase):
         super(TransConv2d, self).__init__()
