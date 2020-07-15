@@ -16,6 +16,18 @@ import vggpy
 import alexnetpy
 import densenetpy
 
+import utility
+import data
+import model
+import loss
+from trainer import Trainer
+from tqdm import tqdm
+
+from model import *
+from model.edsr import EDSR
+from model.common import ResBlock
+from model.common import Upsampler
+
 device = None
 
 batch_size = 25
@@ -68,6 +80,25 @@ def loaddataset(gpuid,testsize):
     labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
 
     return images, labels.to(device)
+
+def loadnetwork2(archname,gpuid,testsize,args,dataset='imagenet'):
+    global device
+    device = torch.device("cuda:" + str(gpuid) if torch.cuda.is_available() else "cpu")
+
+    if archname != 'edsr':
+        return loadnetwork(archname,gpuid,testsize,dataset=dataset)
+
+    torch.manual_seed(args.seed)
+    checkpoint = utility.checkpoint(args)
+
+    loader = data.Data(args)
+    _model = model.Model(args, checkpoint)
+    layers = findconv(_model)
+    _loss = loss.Loss(args, checkpoint) if not args.test_only else None
+
+    t = Trainer(args, loader, _model, _loss, checkpoint)
+
+    return t.model, None, None, t
 
 def loadnetwork(archname,gpuid,testsize,dataset='imagenet'):
     global device
@@ -173,6 +204,22 @@ def gettop1(logp):
     vals, inds = logp.max(1)
 
     return inds
+
+def predict2(archname, net, images, configs, batch_size=25):
+    if archname != 'edsr':
+        return predict(net, images, batch_size=batch_size)
+
+    global device
+    y_hat = torch.zeros(0,device=device)
+    for idx_data, d in enumerate(configs.loader_test):
+        for idx_scale, scale in enumerate(configs.scale):
+            d.dataset.set_scale(idx_scale)
+            for lr, hr, filename in tqdm(d, ncols=80):
+                lr, hr = configs.prepare(lr, hr)
+                sr = configs.model(lr, idx_scale)
+                y_hat = torch.cat((y_hat, torch.flatten(sr)))
+                #sr = utility.quantize(sr, configs.args.rgb_range)
+    return y_hat
         
 def predict(net,images,batch_size=25):
     global device
@@ -183,6 +230,31 @@ def predict(net,images,batch_size=25):
             x = x.to(device)
             y_hat = torch.cat((y_hat,net(x)))
     return y_hat
+
+def pushconv_edsr(layers, container):
+    if isinstance(container, EDSR):
+        pushconv_edsr(layers, container.head)
+        pushconv_edsr(layers, container.body)
+        pushconv_edsr(layers, container.tail)
+    elif isinstance(container, ResBlock):
+        pushconv_edsr(layers, container.body)
+    elif isinstance(container, torch.nn.Sequential):
+        for l in range(0, len(container)):
+            pushconv_edsr(layers, container[l])
+    elif isinstance(container, Upsampler):
+        for l in range(0, len(container)):
+            pushconv_edsr(layers, container[l])
+    elif isinstance(container, torch.nn.Conv2d):
+        layers.append(container)
+
+    return layers
+
+def findconv2(archname,net,includenorm=True):
+    if archname != 'edsr':
+        return findconv(net, includenorm=includenorm)
+
+    layers = pushconv_edsr([], net.model)
+    return layers
 
 def replaceconv(net,layers,includenorm=True):
     pushconv([layers],net,includenorm,direction=1)
