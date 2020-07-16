@@ -150,8 +150,12 @@ parser.add_argument('--tranname', type=str, default='klt',
                     help='transform name')
 parser.add_argument('--archname', type=str, default='edsr',
                     help='architecture name')
-parser.add_argument('--testsize', type=int, default=10000,
+parser.add_argument('--testsize', type=int, default=100,
                     help='size of test images')
+parser.add_argument('--codebase', type=int, default=0,
+                    help='switch of codebase')
+parser.add_argument('--codekern', type=int, default=1,
+                    help='switch of codekern')
 parser.add_argument('--gpuid', type=int, default=0,
                     help='gpuid')
 

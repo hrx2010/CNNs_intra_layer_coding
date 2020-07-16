@@ -99,7 +99,8 @@ for l in range(0,len(layers)):
                     base_W_sse[b,j,i] = (delta_weights**2).mean()
                     #base_Y_log[b,j,i] = -Y_exps[:,0:1000:1000//testsize].diag().log().sum()
                     base_Y_sse[b,j,i] = ((Y_hats - Y)**2).mean()
-                    base_Y_top[b,j,i] = (Y_cats == labels).double().mean()
+                    if archname != 'edsr':
+                        base_Y_top[b,j,i] = (Y_cats == labels).double().mean()
                     base_delta[b,j,i] = delta
                     base_coded[b,j,i] = coded*b
                     mean_Y_sse = base_Y_sse[b,j,i]
