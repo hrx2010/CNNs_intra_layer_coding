@@ -36,6 +36,8 @@ tranname = str(args.tranname)
 archname = str(args.archname)
 testsize = int(args.testsize)
 gpuid  = int(args.gpuid)
+modeid = int(args.modeid)
+ngpus = int(args.ngpus)
 
 maxsteps = 32
 maxrates = 17
@@ -53,6 +55,9 @@ perm, flip = getperm(trantype)
 layers = findconv2(archname,neural,False)
 
 for l in range(0, len(layers)):
+    if ( (l % ngpus) != modeid ):
+        continue
+
     with torch.no_grad():
         basis_vectors = gettrans(archname, trantype, tranname, l, '')
         layer_weights = layers[l].weight.clone()

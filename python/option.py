@@ -146,19 +146,24 @@ parser.add_argument('--save_gt', action='store_true',
 # generate RD curves
 parser.add_argument('--trantype', type=str, default='inter',
                     help='type of transform')
-parser.add_argument('--tranname', type=str, default='klt',
+parser.add_argument('--tranname', type=str, default='ekt',
                     help='transform name')
 parser.add_argument('--archname', type=str, default='edsr',
                     help='architecture name')
 parser.add_argument('--testsize', type=int, default=100,
                     help='size of test images')
-parser.add_argument('--codebase', type=int, default=0,
+parser.add_argument('--codebase', type=int, default=1,
                     help='switch of codebase')
 parser.add_argument('--codekern', type=int, default=1,
                     help='switch of codekern')
 parser.add_argument('--gpuid', type=int, default=0,
                     help='gpuid')
-
+parser.add_argument('--modeid', type=int, default=0,
+                    help='gpuid')
+parser.add_argument('--ngpus', type=int, default=4,
+                    help='gpuid')
+parser.add_argument('--nsamples', type=int, default=5,
+                    help='gpuid')
 
 args = parser.parse_args()
 template.set_template(args)
