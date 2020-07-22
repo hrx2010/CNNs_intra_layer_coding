@@ -205,20 +205,27 @@ def gettop1(logp):
 
     return inds
 
-def predict2(archname, net, images, configs, batch_size=25):
+def predict2(archname, net, images, configs, batch_size=25, ntest=5):
     if archname != 'edsr':
         return predict(net, images, batch_size=batch_size)
 
-    global device
-    y_hat = torch.zeros(0,device=device)
-    for idx_data, d in enumerate(configs.loader_test):
-        for idx_scale, scale in enumerate(configs.scale):
-            d.dataset.set_scale(idx_scale)
-            for lr, hr, filename in d:
-                lr, hr = configs.prepare(lr, hr)
-                sr = configs.model(lr, idx_scale)
-                y_hat = torch.cat((y_hat, torch.flatten(sr)))
-                #sr = utility.quantize(sr, configs.args.rgb_range)
+    #global device
+    #y_hat = torch.zeros(0,device=device)
+    with torch.no_grad():
+        y_hat = np.array([])
+        for idx_data, d in enumerate(configs.loader_test):
+            for idx_scale, scale in enumerate(configs.scale):
+                d.dataset.set_scale(idx_scale)
+                cnt = 0
+                for lr, hr, filename in d:
+                    lr, hr = configs.prepare(lr, hr)
+                    sr = configs.model(lr, idx_scale)
+                    #y_hat = torch.cat((y_hat, torch.flatten(sr)))
+                    #sr = utility.quantize(sr, configs.args.rgb_range)
+                    y_hat = np.concatenate([y_hat, torch.flatten(sr).cpu().numpy()])
+                    cnt += 1
+                    if cnt >= ntest:
+                        break
     return y_hat
 
 def predict_psnr(configs):
