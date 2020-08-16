@@ -69,6 +69,23 @@ def findrdpoints(y_sse,delta,coded,lam):
 
     return np.select(point, y_sse), np.select(point, delta), np.select(point, coded)
 
+# an example to call this function: top_1, top_5 = accuracy(Y, labels, topk=(1,5))
+def accuracy(output, target, topk=(1,)):
+    """Computes the accuracy over the k top predictions for the specified values of k"""
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
+
+        _, pred = output.topk(maxk, 1, True, True)
+        pred = pred.t()
+        #pred.reshape(pred.shape[0], -1)
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+        res = []
+        for k in topk:
+            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            res.append(correct_k.mul_(100.0 / batch_size))
+        return res
 
 def loaddataset(gpuid,testsize):
     global device
