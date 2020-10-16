@@ -28,23 +28,26 @@ tarlayers = findconv(tarnet,False)
 perm, flip = getperm(trantype)
 
 Y = predict(tarnet,images)
-Y_cats = gettop1(Y)
-mean_Y_top = (Y_cats == labels).double().mean()
-print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
+Y_cat1 = gettopk(Y,1)
+Y_cat5 = gettopk(Y,5)
+mean_Y_tp1 = (Y_cat1 == labels[:,None]).double().sum(1).mean()
+mean_Y_tp5 = (Y_cat5 == labels[:,None]).double().sum(1).mean()
+print('%s %s | topk: %5.2f (%5.2f)' % (archname, tranname, 100*mean_Y_tp1, 100*mean_Y_tp5))
 
 hist_sum_W_sse = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_Y_sse = torch.ones(maxsteps,device=getdevice()) * Inf
 pred_sum_Y_sse = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_coded = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_denom = torch.ones(maxsteps,device=getdevice()) * Inf
-hist_sum_Y_top = torch.ones(maxsteps,device=getdevice()) * Inf
+hist_sum_Y_tp1 = torch.ones(maxsteps,device=getdevice()) * Inf
+hist_sum_Y_tp5 = torch.ones(maxsteps,device=getdevice()) * Inf
 hist_sum_non0s = torch.ones(maxsteps,len(srclayers),device=getdevice()) * Inf
 
 for j in range(0,maxsteps):
     hist_sum_W_sse[j] = hist_sum_Y_sse[j] = pred_sum_Y_sse[j] = 0.0
-    hist_sum_coded[j] = hist_sum_Y_top[j] = hist_sum_denom[j] = 0.0
+    hist_sum_coded[j] = hist_sum_Y_tp1[j] = hist_sum_Y_tp5[j] = hist_sum_denom[j] = 0.0
     with torch.no_grad():
-        slope = -34 + 0.5*j
+        slope = -30 + 0.5*j
         sec = time.time()
         for l in range(0,len(srclayers)):
             basis_vectors = gettrans(archname,trantype,tranname,l,'').flatten(2)
@@ -85,23 +88,25 @@ for j in range(0,maxsteps):
             hist_sum_denom[j] = hist_sum_denom[j] + layer_weights.numel()
             tarlayers[l].weight[:] = layer_weights
         Y_hats = predict(tarnet,images)
-        Y_cats = gettop1(Y_hats)
+        Y_cat1 = gettopk(Y_hats,1)
+        Y_cat5 = gettopk(Y_hats,5)
         hist_sum_Y_sse[j] = ((Y_hats - Y)**2).mean()
-        hist_sum_Y_top[j] = (Y_cats == labels).double().mean()
+        hist_sum_Y_tp1[j] = (Y_cat1 == labels[:,None]).double().sum(1).mean()
+        hist_sum_Y_tp5[j] = (Y_cat5 == labels[:,None]).double().sum(1).mean()
         hist_sum_W_sse[j] = hist_sum_W_sse[j]/hist_sum_denom[j]
         hist_sum_coded[j] = hist_sum_coded[j]/hist_sum_denom[j]
         sec = time.time() - sec
 
-        print('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, top1: %5.2f, rate: %5.2e' %\
+        print('%s %s | slope: %+5.1f, ymse: %5.2e (%5.2e), wmse: %5.2e, topk: %5.2f (%5.2f), rate: %5.2e' %\
               (archname, tranname, slope, hist_sum_Y_sse[j], pred_sum_Y_sse[j], \
-               hist_sum_W_sse[j], 100*hist_sum_Y_top[j], hist_sum_coded[j]))
+               hist_sum_W_sse[j], 100*hist_sum_Y_tp1[j], 100*hist_sum_Y_tp5[j],  hist_sum_coded[j]))
         if hist_sum_coded[j] == 0.0 or \
-           hist_sum_Y_top[j] <= 0.002:
+           hist_sum_Y_tp1[j] <= 0.002:
             break
 
 io.savemat(('%s_%s_sum_%d_output_%s.mat' % (archname,tranname,testsize,trantype)),\
-           {'hist_sum_Y_sse':hist_sum_Y_sse.cpu().numpy(),'hist_sum_Y_top':hist_sum_Y_top.cpu().numpy(),\
+           {'hist_sum_Y_sse':hist_sum_Y_sse.cpu().numpy(),'hist_sum_Y_tp1':hist_sum_Y_tp1.cpu().numpy(),\
             'pred_sum_Y_sse':pred_sum_Y_sse.cpu().numpy(),'hist_sum_coded':hist_sum_coded.cpu().numpy(),\
             'hist_sum_W_sse':hist_sum_W_sse.cpu().numpy(),'hist_sum_denom':hist_sum_denom.cpu().numpy(),\
-            'hist_sum_non0s':hist_sum_non0s.cpu().numpy()});
+            'hist_sum_non0s':hist_sum_non0s.cpu().numpy(),'hist_sum_Y_tp5':hist_sum_Y_tp5.cpu().numpy()});
 

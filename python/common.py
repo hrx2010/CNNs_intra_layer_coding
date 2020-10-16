@@ -173,8 +173,15 @@ def gettop1(logp):
     vals, inds = logp.max(1)
 
     return inds
+
+def gettopk(logp,k=1):
+    logp = logp.exp()
+    logp = logp/logp.sum(1).reshape(-1,1)
+    vals, inds = logp.topk(k,dim=1)
+
+    return inds
         
-def predict(net,images,batch_size=25):
+def predict(net,images,batch_size=100):
     global device
     y_hat = torch.zeros(0,device=device)
     loader = torch.utils.data.DataLoader(images,batch_size=batch_size)
