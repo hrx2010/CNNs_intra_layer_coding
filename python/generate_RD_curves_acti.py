@@ -8,14 +8,14 @@ from common import *
 from header import *
 from network import convert_qconv
 
-archname = str(sys.argv[1])
-testsize = int(sys.argv[2])
-gpuid   = gpuid if len(sys.argv) < 4 else int(sys.argv[3])
-tranname = 'acti'
-trantype = 'idt'
+trantype = str(sys.argv[1])
+tranname = str(sys.argv[2])
+archname = str(sys.argv[3])
+testsize = int(sys.argv[4])
+gpuid   = gpuid if len(sys.argv) < 6 else int(sys.argv[5])
 
 maxsteps = 32
-maxrates = 17
+maxrates = 4
 
 neural, images, labels = loadnetwork(archname,gpuid,testsize)
 
@@ -38,14 +38,14 @@ for l in range(0,len(layers)):
 
         scale = 0
         coded = Inf
-        start = scale - 2
+        start = scale
         for b in range(0,maxrates):
             last_Y_sse = Inf
             last_W_sse = Inf
             for j in range(0,maxsteps):
                 sec = time.time()
                 delta = start + 0.25*j
-                layers[l].lossy, layers[l].depth, layers[l].delta = True, b, delta
+                layers[l].quantized, layers[l].depth, layers[l].delta = True, b, delta
                 Y_hats = predict(neural,images)
                 Y_cats = gettop1(Y_hats)
                 sec = time.time() - sec
@@ -59,7 +59,7 @@ for l in range(0,len(layers)):
                 #mean_W_sse = acti_W_sse[b,j,0]
                 mean_coded = acti_coded[b,j,0]
                 
-                #print('%d, %d, %f' % (b, j, acti_Y_sse[b,j,0]))
+                print('%d, %d, %f' % (b, j, acti_Y_sse[b,j,0]))
                 if mean_Y_sse > last_Y_sse or\
                    b == 0:
                     break
@@ -76,7 +76,7 @@ for l in range(0,len(layers)):
                   'mse: %5.2e (%5.2e), top1: %5.2f, rate: %4.1f, time: %5.2fs'\
                   % (archname, tranname, l, len(layers), delta, mean_Y_sse, mean_Y_sse, 100*mean_Y_top, b, sec))
 
-        layers[l].lossy = False
+        layers[l].quantized, layers[l].depth, layers[l].delta = False, 0, 0
 
         io.savemat(('%s_%s_val_%03d_%04d_output_%s_acti.mat' % (archname,tranname,l,testsize,trantype)),\
                    {'acti_coded':acti_coded.cpu().numpy(),'acti_Y_sse':acti_Y_sse.cpu().numpy(),\

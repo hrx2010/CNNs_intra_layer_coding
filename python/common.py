@@ -42,18 +42,21 @@ def loadrdcurves(archname,tranname,trantype,l,part):
     #mat = io.loadmat('%s_%s_val_1000_%d_%d_output_%s_%s' % (archname,tranname,l+1,l+1,trantype,part))
     #return mat['%s_Y_sse'%part][l,0], mat['%s_delta'%part][l,0], mat['%s_coded'%part][l,0]
 
-def findrdpoints(y_sse,delta,coded,lam):
+def findrdpoints(y_sse,delta,coded,lam_or_bit, is_bit=False):
     # find the optimal quant step-size
     y_sse[np.isnan(y_sse)] = float('inf')
     ind1 = np.nanargmin(y_sse,1)
     ind0 = np.arange(ind1.shape[0]).reshape(-1,1).repeat(ind1.shape[1],1)
     ind2 = np.arange(ind1.shape[1]).reshape(1,-1).repeat(ind1.shape[0],0)
-    inds = np.ravel_multi_index((ind0,ind1,ind2),y_sse.shape)
+    inds = np.ravel_multi_index((ind0,ind1,ind2),y_sse.shape) # bit_depth x blocks
     y_sse = y_sse.reshape(-1)[inds]
     delta = delta.reshape(-1)[inds]
     coded = coded.reshape(-1)[inds]
     # find the minimum Lagrangian cost
-    point = y_sse + lam*coded == (y_sse + lam*coded).min(0)
+    if is_bit:
+        point = coded == lam_or_bit
+    else:
+        point = y_sse + lam_or_bit*coded == (y_sse + lam_or_bit*coded).min(0)
 
     return np.select(point, y_sse), np.select(point, delta), np.select(point, coded)
 
@@ -202,7 +205,7 @@ def findconv(net,includenorm=True):
 def pushattr(layers,container,attr,includenorm,direction):
     if isinstance(getattr(container,attr), torch.nn.Linear) or \
        isinstance(getattr(container,attr), torch.nn.Conv2d) or \
-       isinstance(getattr(container,attr), transconv.QConv2d) or \
+       isinstance(getattr(container,attr), transconv.QAConv2d) or \
        isinstance(getattr(container,attr), transconv.TransConv2d) or \
        isinstance(getattr(container,attr), torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
@@ -215,7 +218,7 @@ def pushattr(layers,container,attr,includenorm,direction):
 def pushlist(layers,container,attr,includenorm,direction):
     if isinstance(container[attr], torch.nn.Linear) or \
        isinstance(container[attr], torch.nn.Conv2d) or \
-       isinstance(container[attr], transconv.QConv2d) or \
+       isinstance(container[attr], transconv.QAConv2d) or \
        isinstance(container[attr], transconv.TransConv2d) or \
        isinstance(container[attr], torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
