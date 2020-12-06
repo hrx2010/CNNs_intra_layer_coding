@@ -41,6 +41,52 @@ class TransConv2d(nn.Module):
         self.conv2.quantize()
 
 
+class QConv2d(nn.Module):
+    class Quantize(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx, input, delta, depth):
+            return common.quantize(input, 2**delta, depth)
+
+        def backward(ctx, grad_output):
+            return grad_output, None, None
+
+    def __init__(self, layer, delta, depth, lossy=False):
+        super(QConv2d, self).__init__()
+        self.quant = self.Quantize.apply
+        self.layer = layer
+        self.delta = delta
+        self.depth = depth
+        self.lossy = lossy
+
+    def extra_repr(self):
+        s = ('delta={delta}, depth={depth}, lossy={lossy}')
+        return self.layer.extra_repr() + ', ' + s.format(**self.__dict__)
+
+    def __repr__(self):
+        # We treat the extra repr like the sub-module, one item per line
+        extra_lines = []
+        extra_repr = self.extra_repr()
+        # empty string will be split into list ['']
+        if extra_repr:
+            extra_lines = extra_repr.split('\n')
+        child_lines = []
+        lines = extra_lines + child_lines
+
+        main_str = self._get_name() + '('
+        if lines:
+            # simple one-liner info, which most builtin Modules will use
+            if len(extra_lines) == 1 and not child_lines:
+                main_str += extra_lines[0]
+            else:
+                main_str += '\n  ' + '\n  '.join(lines) + '\n'
+
+        main_str += ')'
+        return main_str
+
+    def forward(self, input):
+        input = self.quant(input, self.delta, self.depth) if self.lossy else input
+        return self.layer(input)
+    
 class QuantConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, delta, coded, block,\
                  is_coded, stride=1, padding=0, bias=False, perm=False):

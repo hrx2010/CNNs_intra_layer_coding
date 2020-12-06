@@ -34,6 +34,16 @@ def transform(network,trantype,tranname,archname,rdlambda,codekern,codebase):
 
     return network.to(common.device)
 
+def convert_qconv(network):
+    layers = findconv(network, includenorm=False)
+
+    with torch.no_grad():
+        for l in range(0,len(layers)):
+            layers[l] = transconv.QConv2d(layers[l], 0, 0)
+        
+        network = replaceconv(network, layers, includenorm=False)
+    return network.to(common.device)
+
 def quantize(network):
     layers = findconv(network,False)
     with torch.no_grad():
