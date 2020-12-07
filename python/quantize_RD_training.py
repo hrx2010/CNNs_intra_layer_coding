@@ -43,13 +43,3 @@ for i in range(0,epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-
-neural.eval()
-# neural = network.quantize(neural)
-# Y_hats = predict(neural.to(common.device),images)
-# Y_cats = gettop1(Y_hats)
-# mean_Y_sse = ((Y_hats - Y)**2).mean()
-# mean_Y_top = (Y_cats == labels).double().mean()
-
-# print('%s %s | slope: %+5.1f, top1: %5.2f' % (archname, tranname, rdlambda, 100*mean_Y_top))

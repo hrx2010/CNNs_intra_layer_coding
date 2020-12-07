@@ -198,6 +198,10 @@ def replaceconv(net,layers,includenorm=True):
     pushconv([layers],net,includenorm,direction=1)
     return net
 
+def hookconv(net,includenorm=True):
+    layers = findconv(net,includenorm)
+    return [Hook(layer) for layer in layers]
+
 def findconv(net,includenorm=True):
     layers = pushconv([[]],net,includenorm)
     return layers
@@ -206,7 +210,6 @@ def pushattr(layers,container,attr,includenorm,direction):
     if isinstance(getattr(container,attr), torch.nn.Linear) or \
        isinstance(getattr(container,attr), torch.nn.Conv2d) or \
        isinstance(getattr(container,attr), transconv.QAConv2d) or \
-       isinstance(getattr(container,attr), transconv.TransConv2d) or \
        isinstance(getattr(container,attr), torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
         if direction == 0:
@@ -219,7 +222,6 @@ def pushlist(layers,container,attr,includenorm,direction):
     if isinstance(container[attr], torch.nn.Linear) or \
        isinstance(container[attr], torch.nn.Conv2d) or \
        isinstance(container[attr], transconv.QAConv2d) or \
-       isinstance(container[attr], transconv.TransConv2d) or \
        isinstance(container[attr], torch.nn.modules \
                   .batchnorm.BatchNorm2d) and includenorm:
         if direction == 0:
@@ -295,3 +297,15 @@ def permute(layer,dimen):
         return layer.weight.grad.flatten(1).permute([1,0])
 def zerograd(layer):
     layer.weight.grad.zero_()
+
+class Hook():
+    def __init__(self, module, backward=False):
+        if backward==False:
+            self.hook = module.register_forward_hook(self.hook_fn)
+        else:
+            self.hook = module.register_backward_hook(self.hook_fn)
+    def hook_fn(self, module, input, output):
+        self.input = torch.tensor(input[0].shape[1:])
+        self.output = torch.tensor(output[0].shape[1:])
+    def close(self):
+        self.hook.remove()

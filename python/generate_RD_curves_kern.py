@@ -94,9 +94,9 @@ for l in range(0,len(layers)):
                 mean_Y_sse = kern_Y_sse[b,j,i]
                 mean_Y_top = kern_Y_top[b,j,i]
                 print('%s %s | layer: %03d/%03d, band %04d/%04d, delta: %+6.2f, '
-                      'mse: %5.2e (%5.2e), top1: %5.2f, rate: %4.1f, time: %5.2fs'\
+                      'mse: %5.2e (%5.2e), top1: %5.2f, numel: %5.2e, rate: %4.1f, time: %5.2fs'\
                       % (archname, tranname, l, len(layers), i, trans_weights.shape[0],\
-                         delta, mean_Y_sse, mean_W_sse, 100*mean_Y_top, b, sec))
+                         delta, mean_Y_sse, mean_W_sse, 100*mean_Y_top, coded, b, sec))
 
         layers[l].weight[:] = layer_weights[:].permute(inv(flip)).reshape(dimen_weights).\
                               permute(inv(perm)).reshape(layers[l].weight.shape)

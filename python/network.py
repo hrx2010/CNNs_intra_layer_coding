@@ -26,14 +26,14 @@ def transform(network,trantype,tranname,archname,bitdepth,rdlambda,codekern,code
             acti_delta = acti_coded = []
             if codeacti:
                 acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,tranname,trantype,l, 'acti')
-                acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, bitdepth, True)
+                acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**rdlambda)
 
             stride = min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
             basis_vectors = basis_vectors[:,:,1].permute(inv(perm[0:2]))
             trans_weights = trans_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).reshape(layers[l].weight.size())
-            layers[l] = transconv.TransConv2d(basis_vectors,trans_weights,layers[l].bias,layers[l].stride,layers[l].padding,\
-                                              trantype,stride,kern_coded,kern_delta,base_coded,base_delta,acti_coded,acti_delta,\
-                                              codekern,codebase,codeacti)
+            layers[l] = transconv.convert_tconv(basis_vectors,trans_weights,layers[l].bias,layers[l].stride,layers[l].padding,\
+                                                trantype,stride,kern_coded,kern_delta,base_coded,base_delta,acti_coded,acti_delta,\
+                                                codekern,codebase,codeacti)
         network = replaceconv(network,layers,includenorm=False)
 
     return network.to(common.device)

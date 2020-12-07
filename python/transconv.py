@@ -3,29 +3,24 @@ import torch.nn as nn
 import common
 from header import *
 
-class TransConv2d(nn.Module):
-    def __init__(self, base, kern, bias, stride, padding, trantype, block, \
-                 kern_coded, kern_delta, base_coded, base_delta, acti_coded, acti_delta, \
-                 codekern, codebase, codeacti):
-        super(TransConv2d, self).__init__()
+def convert_tconv(base, kern, bias, stride, padding, trantype, block, \
+                  kern_coded, kern_delta, base_coded, base_delta, acti_coded, acti_delta, \
+                  codekern, codebase, codeacti):
 
-        if trantype == 'inter':
-            conv1 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=None,weights=base,\
-                             delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
-            conv2 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=bias,weights=kern,perm=True,\
-                             stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
-                             block=block,is_quantized=codekern)
-        elif trantype == 'exter':
-            conv1 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=None,weights=kern,\
-                             stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
-                             block=block,is_quantized=codekern)
-            conv2 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=bias,weights=base,perm=True,\
-                             delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
+    if trantype == 'inter':
+        conv1 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=None,weights=base,\
+                         delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
+        conv2 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=bias,weights=kern,perm=True,\
+                         stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
+                         block=block,is_quantized=codekern)
+    elif trantype == 'exter':
+        conv1 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=None,weights=kern,\
+                         stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
+                         block=block,is_quantized=codekern)
+        conv2 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=bias,weights=base,perm=True,\
+                         delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
 
-        self.quant = QAConv2d(nn.Sequential(conv1, conv2), acti_delta, acti_coded, codeacti)
-
-    def forward(self, x):
-        return self.quant(x)
+    return QAConv2d(nn.Sequential(conv1, conv2), acti_delta, acti_coded, codeacti)
 
     # def quantize(self):
     #     self.quant.layer[0].quantize()
