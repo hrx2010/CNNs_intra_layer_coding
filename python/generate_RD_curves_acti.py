@@ -15,7 +15,7 @@ testsize = int(sys.argv[4])
 gpuid   = gpuid if len(sys.argv) < 6 else int(sys.argv[5])
 
 maxsteps = 32
-maxrates = 4
+maxrates = 16
 
 neural, images, labels = loadnetwork(archname,gpuid,testsize)
 
@@ -59,7 +59,7 @@ for l in range(0,len(layers)):
                 #mean_W_sse = acti_W_sse[b,j,0]
                 mean_coded = acti_coded[b,j,0]
                 
-                print('%d, %d, %f' % (b, j, acti_Y_sse[b,j,0]))
+                #print('%d, %d, %f' % (b, j, acti_Y_sse[b,j,0]))
                 if mean_Y_sse > last_Y_sse or\
                    b == 0:
                     break
