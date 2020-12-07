@@ -45,7 +45,7 @@ for l in range(0,len(layers)):
             for j in range(0,maxsteps):
                 sec = time.time()
                 delta = start + 0.25*j
-                layers[l].quantized, layers[l].depth, layers[l].delta = True, b, delta
+                layers[l].quantized, layers[l].depth, layers[l].delta = True, [b], [delta]
                 Y_hats = predict(neural,images)
                 Y_cats = gettop1(Y_hats)
                 sec = time.time() - sec
@@ -76,7 +76,7 @@ for l in range(0,len(layers)):
                   'mse: %5.2e (%5.2e), top1: %5.2f, rate: %4.1f, time: %5.2fs'\
                   % (archname, tranname, l, len(layers), delta, mean_Y_sse, mean_Y_sse, 100*mean_Y_top, b, sec))
 
-        layers[l].quantized, layers[l].depth, layers[l].delta = False, 0, 0
+        layers[l].quantized, layers[l].depth, layers[l].delta = False, [0], [0]
 
         io.savemat(('%s_%s_val_%03d_%04d_output_%s_acti.mat' % (archname,tranname,l,testsize,trantype)),\
                    {'acti_coded':acti_coded.cpu().numpy(),'acti_Y_sse':acti_Y_sse.cpu().numpy(),\

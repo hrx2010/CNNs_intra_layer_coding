@@ -2,7 +2,7 @@ import transconv
 import common
 from common import *
 
-def transform(network,trantype,tranname,archname,rdlambda,codekern,codebase,codeacti,bit_depth=8):
+def transform(network,trantype,tranname,archname,bitdepth,rdlambda,codekern,codebase,codeacti):
     layers = findconv(network,False)
     perm, flip = getperm(trantype)
 
@@ -26,12 +26,11 @@ def transform(network,trantype,tranname,archname,rdlambda,codekern,codebase,code
             acti_delta = acti_coded = []
             if codeacti:
                 acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,tranname,trantype,l, 'acti')
-                acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, bit_depth, True)
+                acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, bitdepth, True)
 
             stride = min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
             basis_vectors = basis_vectors[:,:,1].permute(inv(perm[0:2]))
-            trans_weights = trans_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm))\
-                                                                                   .reshape(layers[l].weight.size())
+            trans_weights = trans_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).reshape(layers[l].weight.size())
             layers[l] = transconv.TransConv2d(basis_vectors,trans_weights,layers[l].bias,layers[l].stride,layers[l].padding,\
                                               trantype,stride,kern_coded,kern_delta,base_coded,base_delta,acti_coded,acti_delta,\
                                               codekern,codebase,codeacti)

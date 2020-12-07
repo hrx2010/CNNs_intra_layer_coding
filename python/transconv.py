@@ -10,40 +10,32 @@ class TransConv2d(nn.Module):
         super(TransConv2d, self).__init__()
 
         if trantype == 'inter':
-            conv1 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=False,\
-                             delta=base_delta,coded=base_coded,block=block,is_coded=codebase)
-            conv2 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],perm=True,\
+            conv1 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=None,weights=base,\
+                             delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
+            conv2 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=bias,weights=kern,perm=True,\
                              stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
-                             block=block,is_coded=codekern)
-            with torch.no_grad():
-                conv1.weight[:] = base.reshape(self.conv1.weight.shape)
-                conv2.weight[:] = kern.reshape(self.conv2.weight.shape)
-                conv2.bias = bias
+                             block=block,is_quantized=codekern)
         elif trantype == 'exter':
-            conv1 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=False,\
+            conv1 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=None,weights=kern,\
                              stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
-                             block=block,is_coded=codekern)
-            conv2 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,perm=True,\
-                             delta=base_delta,coded=base_coded,block=block,is_coded=codebase)
-            with torch.no_grad():
-                conv1.weight[:] = kern.reshape(self.conv1.weight.shape)
-                conv2.weight[:] = base.reshape(self.conv2.weight.shape)
-                conv2.bias = bias
+                             block=block,is_quantized=codekern)
+            conv2 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=bias,weights=base,perm=True,\
+                             delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
 
         self.quant = QAConv2d(nn.Sequential(conv1, conv2), acti_delta, acti_coded, codeacti)
 
     def forward(self, x):
         return self.quant(x)
 
-    def quantize(self):
-        self.convs[0].quantize()
-        self.convs[1].quantize()
+    # def quantize(self):
+    #     self.quant.layer[0].quantize()
+    #     self.quant.layer[1].quantize()
 
 class QAConv2d(nn.Module):
     class Quantize(torch.autograd.Function):
         @staticmethod
         def forward(ctx, input, delta, depth):
-            return common.quantize(input, 2**delta, depth)
+            return common.quantize(input, 2**delta[0], depth[0])
 
         def backward(ctx, grad_output):
             return grad_output, None, None
@@ -63,7 +55,7 @@ class QAConv2d(nn.Module):
     
     def extra_repr(self):
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
-        return self.layer.extra_repr() + ', ' + s.format(**self.__dict__)
+        return self.layer.__repr__() + ', ' + s.format(**self.__dict__)
 
     def __repr__(self):
         # We treat the extra repr like the sub-module, one item per line
@@ -92,37 +84,43 @@ class QWConv2d(nn.Conv2d):
         def forward(ctx, quant, delta, coded, block, perm, inplace=False):
             quant = quant.permute([1,0,2,3]) if perm else quant
             for i in range(0,quant.shape[0],block):
+                if delta[i] == Inf:
+                    continue
                 rs = range(i,min(i+block,quant.shape[0]))
                 quant[rs,:] = common.quantize(quant[rs,:],2**delta[i],coded[i]/quant[rs,:].numel())
             quant = quant.permute([1,0,2,3]) if perm else quant
 
             return quant
 
-
     def backward(ctx, grad_output):
         return grad_output, None, None, None, None, None
 
 
-    def __init__(self, in_channels, out_channels, kernel_size, delta, coded, block,\
-                 is_coded, stride=1, padding=0, groups=1, bias=False, perm=False):
+    def __init__(self, in_channels, out_channels, kernel_size, weights, delta, coded, block,\
+                 is_quantized, stride=1, padding=0, groups=1, bias=False, perm=False):
         super(QWConv2d, self).__init__(in_channels, out_channels, kernel_size, stride=stride, padding=padding, \
-                                       bias=bias, groups=groups)
+                                       bias=True if bias != None else False, groups=groups)
         self.quant = self.Quantize.apply
         self.delta = delta
         self.coded = coded
         self.block = block
         self.perm = perm
-        self.is_coded = is_coded
+        self.is_quantized = is_quantized
+
+        with torch.no_grad():
+            self.weight[:] = weights.reshape(self.weight.shape)
+            if bias != None:
+                self.bias[:] = bias.reshape(self.bias.shape)
 
         for param in self.parameters():
-            param.requires_grad = is_coded
+            param.requires_grad = is_quantized
 
     def forward(self, input):
-        weight = self.quant(self.weight, self.delta, self.coded, self.block, self.perm) if self.is_coded else self.weight
-        return torch.nn.functional.conv2d(input, weight, self.bias, self.stride, self.padding, self.groups)
+        weight = self.quant(self.weight, self.delta, self.coded, self.block, self.perm) if self.is_quantized else self.weight
+        return torch.nn.functional.conv2d(input, weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
-    # def quantize(self):
-    #     if self.is_coded:
-    #         self.quant(self.weight,self.delta,self.coded,self.block,self.perm,True)
+    def quantize(self):
+        if self.is_quantized:
+            self.quant(self.weight,self.delta,self.coded,self.block,self.perm,True)
 
 
