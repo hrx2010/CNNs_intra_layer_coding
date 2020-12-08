@@ -29,9 +29,10 @@ def convert_tconv(base, kern, bias, stride, padding, trantype, block, \
 class QAConv2d(nn.Module):
     class Quantize(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, input, delta, depth):
-            return common.quantize(input, 2**delta[0], depth[0])
+        def forward(ctx, input, delta, coded):
+            return common.quantize(input, 2**delta[0], coded[0]/input[0,:].numel())
 
+        @staticmethod
         def backward(ctx, grad_output):
             return grad_output, None, None
 
@@ -87,6 +88,7 @@ class QWConv2d(nn.Conv2d):
 
             return quant
 
+        @staticmethod
         def backward(ctx, grad_output):
             return grad_output, None, None, None, None, None
 
@@ -114,8 +116,8 @@ class QWConv2d(nn.Conv2d):
         weight = self.quant(self.weight, self.delta, self.coded, self.block, self.perm) if self.is_quantized else self.weight
         return torch.nn.functional.conv2d(input, weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
-    def quantize(self):
-        if self.is_quantized:
-            self.quant(self.weight,self.delta,self.coded,self.block,self.perm,True)
+    # def quantize(self):
+    #     if self.is_quantized:
+    #         self.quant(self.weight,self.delta,self.coded,self.block,self.perm,True)
 
 
