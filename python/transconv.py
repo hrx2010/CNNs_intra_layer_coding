@@ -87,8 +87,8 @@ class QWConv2d(nn.Conv2d):
 
             return quant
 
-    def backward(ctx, grad_output):
-        return grad_output, None, None, None, None, None
+        def backward(ctx, grad_output):
+            return grad_output, None, None, None, None, None
 
 
     def __init__(self, in_channels, out_channels, kernel_size, weights, delta, coded, block,\
