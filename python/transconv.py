@@ -22,10 +22,6 @@ def convert_tconv(base, kern, bias, stride, padding, trantype, block, \
 
     return QAConv2d(nn.Sequential(conv1, conv2), acti_delta, acti_coded, codeacti)
 
-    # def quantize(self):
-    #     self.quant.layer[0].quantize()
-    #     self.quant.layer[1].quantize()
-
 class QAConv2d(nn.Module):
     class Quantize(torch.autograd.Function):
         @staticmethod
@@ -77,11 +73,11 @@ class QAConv2d(nn.Module):
 class QWConv2d(nn.Conv2d):
     class Quantize(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, quant, delta, coded, block, perm, inplace=False):
+        def forward(ctx, quant, delta, coded, block, perm):
             quant = quant.permute([1,0,2,3]) if perm else quant
             for i in range(0,quant.shape[0],block):
                 if delta[i] == Inf:
-                    continue
+                    delta[i] = coded[i] = 0
                 rs = range(i,min(i+block,quant.shape[0]))
                 quant[rs,:] = common.quantize(quant[rs,:],2**delta[i],coded[i]/quant[rs,:].numel())
             quant = quant.permute([1,0,2,3]) if perm else quant
@@ -90,7 +86,7 @@ class QWConv2d(nn.Conv2d):
 
         @staticmethod
         def backward(ctx, grad_output):
-            return grad_output, None, None, None, None, None
+            return grad_output, None, None, None, None
 
 
     def __init__(self, in_channels, out_channels, kernel_size, weights, delta, coded, block,\
@@ -112,12 +108,33 @@ class QWConv2d(nn.Conv2d):
         for param in self.parameters():
             param.requires_grad = is_quantized
 
+    def extra_repr(self):
+        s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
+        dic = {'depth':self.coded[::self.block], 'delta':self.delta[::self.block], 'quantized':self.is_quantized}
+        return super().extra_repr() + ', ' + s.format(**dic)
+
+    # def __repr__(self):
+    #     # We treat the extra repr like the sub-module, one item per line
+    #     extra_lines = []
+    #     extra_repr = self.extra_repr()
+    #     # empty string will be split into list ['']
+    #     if extra_repr:
+    #         extra_lines = extra_repr.split('\n')
+    #     child_lines = []
+    #     lines = extra_lines + child_lines
+
+    #     main_str = self._get_name() + '('
+    #     if lines:
+    #         # simple one-liner info, which most builtin Modules will use
+    #         if len(extra_lines) == 1 and not child_lines:
+    #             main_str += extra_lines[0]
+    #         else:
+    #             main_str += '\n  ' + '\n  '.join(lines) + '\n'
+
+    #     main_str += ')'
+    #     return main_str
+
+
     def forward(self, input):
         weight = self.quant(self.weight, self.delta, self.coded, self.block, self.perm) if self.is_quantized else self.weight
         return torch.nn.functional.conv2d(input, weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
-
-    # def quantize(self):
-    #     if self.is_quantized:
-    #         self.quant(self.weight,self.delta,self.coded,self.block,self.perm,True)
-
-
