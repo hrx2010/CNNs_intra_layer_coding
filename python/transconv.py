@@ -109,8 +109,11 @@ class QWConv2d(nn.Conv2d):
             param.requires_grad = is_quantized
 
     def extra_repr(self):
+        numel = (self.weight.shape[1] if self.perm else self.weight.shape[0])/self.block
+        depth = [self.coded[i]/self.weight.numel()*numel for i in range(0,len(self.coded),self.block)]
+        delta = [self.delta[i] for i in range(0,len(self.delta),self.block)]
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
-        dic = {'depth':self.coded[::self.block], 'delta':self.delta[::self.block], 'quantized':self.is_quantized}
+        dic = {'depth':depth, 'delta':delta, 'quantized':self.is_quantized}
         return super().extra_repr() + ', ' + s.format(**dic)
 
     # def __repr__(self):
