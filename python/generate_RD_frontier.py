@@ -90,15 +90,16 @@ for j in range(0,maxsteps):
                     pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + base_Y_sse[i]
                     hist_sum_coded[j] = hist_sum_coded[j] + base_coded[i]
             if codeacti:
-                tarlayers[l].quantized, tarlayers[l].coded, tarlayers[l].delta = True, acti_coded, acti_delta
                 pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + acti_Y_sse[0]
                 hist_sum_coded[j] = hist_sum_coded[j] + acti_coded[0]
+                hist_sum_denom[j] = hist_sum_denom[j] + dimens[l].prod()
+                tarlayers[l].quantized, tarlayers[l].coded, tarlayers[l].delta = True, acti_coded, acti_delta
             layer_weights = basis_vectors[:,:,1].mm(trans_weights)
             layer_weights = layer_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).\
                             reshape(srclayers[l].weight.size())
             hist_sum_non0s[j,l] = (trans_weights != 0).any(1).sum()
             hist_sum_W_sse[j] = hist_sum_W_sse[j] + ((srclayers[l].weight - layer_weights)**2).sum()
-            hist_sum_denom[j] = hist_sum_denom[j] + layer_weights.numel() + dimens[l].prod()
+            hist_sum_denom[j] = hist_sum_denom[j] + layer_weights.numel()
             tarlayers[l].layer.weight[:] = layer_weights
         Y_hats = predict(tarnet,images)
         Y_cat1 = gettopk(Y_hats,1)
