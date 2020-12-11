@@ -32,22 +32,25 @@ class QAConv2d(nn.Module):
         def backward(ctx, grad_output):
             return grad_output, None, None
 
-    def __init__(self, layer, delta, depth, quantized=False):
+    def __init__(self, layer, delta, coded, quantized=False):
         super(QAConv2d, self).__init__()
         self.quant = self.Quantize.apply
         self.quantized = quantized
         self.layer = layer
         self.delta = delta
-        self.depth = depth
+        self.coded = coded
+        self.numel = 1
 
     def forward(self, input):
+        self.numel = input[0].numel()
         if self.quantized:
-            input = self.quant(input, self.delta, self.depth) 
+            input = self.quant(input, self.delta, self.coded) 
         return self.layer(input)
     
     def extra_repr(self):
+        dic = {'depth':self.coded/self.numel, 'delta':self.delta, 'quantized':self.quantized}
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
-        return self.layer.__repr__() + ', ' + s.format(**self.__dict__)
+        return self.layer.__repr__() + ', ' + s.format(**dic)
 
     def __repr__(self):
         # We treat the extra repr like the sub-module, one item per line

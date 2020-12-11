@@ -6,32 +6,38 @@ importlib.reload(header)
 
 from common import *
 from header import *
+from network import convert_qconv
 
 trantype = str(sys.argv[1])
 tranname = str(sys.argv[2])
 archname = str(sys.argv[3])
 testsize = int(sys.argv[4])
-codebase = True if len(sys.argv) < 6 else int(sys.argv[5])
-codekern = True if len(sys.argv) < 7 else int(sys.argv[6])
-gpuid   = gpuid if len(sys.argv) < 8 else int(sys.argv[7])
+codebase = True if len(sys.argv) < 6 else bool(int(sys.argv[5]))
+codekern = True if len(sys.argv) < 7 else bool(int(sys.argv[6]))
+codeacti = True if len(sys.argv) < 8 else bool(int(sys.argv[7]))
+gpuid   = gpuid if len(sys.argv) < 9 else int(sys.argv[8])
 
 maxsteps = 48
 maxrates = 17
 
 srcnet, images, labels = loadnetwork(archname,gpuid,testsize)
 tarnet, images, labels = loadnetwork(archname,gpuid,testsize)
-tarnet.eval()
+tarnet = convert_qconv(tarnet)
 
 srclayers = findconv(srcnet,False)
 tarlayers = findconv(tarnet,False)
+tardimens = hookconv(tarnet,False)
 
 perm, flip = getperm(trantype)
 
+tarnet.eval()
 Y = predict(tarnet,images)
 Y_cat1 = gettopk(Y,1)
 Y_cat5 = gettopk(Y,5)
 mean_Y_tp1 = (Y_cat1 == labels[:,None]).double().sum(1).mean()
 mean_Y_tp5 = (Y_cat5 == labels[:,None]).double().sum(1).mean()
+dimens = [tardimens[i].input for i in range(0,len(tardimens))]
+
 print('%s %s | topk: %5.2f (%5.2f)' % (archname, tranname, 100*mean_Y_tp1, 100*mean_Y_tp5))
 
 hist_sum_W_sse = torch.ones(maxsteps,device=getdevice()) * Inf
@@ -63,6 +69,9 @@ for j in range(0,maxsteps):
             if codebase:
                 base_Y_sse, base_delta, base_coded = loadrdcurves(archname,tranname,trantype,l, 'base')
                 base_Y_sse, base_delta, base_coded = findrdpoints(base_Y_sse,base_delta,base_coded, 2**slope)
+            if codeacti:
+                acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,tranname,trantype,l, 'acti')
+                acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**slope)
 
             stride = min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
             for i in range(0,trans_weights.shape[0],stride):
@@ -80,13 +89,17 @@ for j in range(0,maxsteps):
                                                    base_coded[i]/(len(rs)*basis_vectors.shape[0]))
                     pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + base_Y_sse[i]
                     hist_sum_coded[j] = hist_sum_coded[j] + base_coded[i]
+            if codeacti:
+                tarlayers[l].quantized, tarlayers[l].coded, tarlayers[l].delta = True, acti_coded, acti_delta
+                pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + acti_Y_sse[0]
+                hist_sum_coded[j] = hist_sum_coded[j] + acti_coded[0]
             layer_weights = basis_vectors[:,:,1].mm(trans_weights)
             layer_weights = layer_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).\
                             reshape(srclayers[l].weight.size())
             hist_sum_non0s[j,l] = (trans_weights != 0).any(1).sum()
             hist_sum_W_sse[j] = hist_sum_W_sse[j] + ((srclayers[l].weight - layer_weights)**2).sum()
-            hist_sum_denom[j] = hist_sum_denom[j] + layer_weights.numel()
-            tarlayers[l].weight[:] = layer_weights
+            hist_sum_denom[j] = hist_sum_denom[j] + layer_weights.numel() + dimens[l].prod()
+            tarlayers[l].layer.weight[:] = layer_weights
         Y_hats = predict(tarnet,images)
         Y_cat1 = gettopk(Y_hats,1)
         Y_cat5 = gettopk(Y_hats,5)
