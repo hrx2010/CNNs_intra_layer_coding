@@ -15,6 +15,7 @@ import resnetpy
 import vggpy
 import alexnetpy
 import densenetpy
+import mobilenetpy
 
 device = None
 
@@ -90,7 +91,7 @@ def loadnetwork(archname,gpuid,testsize,dataset='imagenet'):
         elif archname == 'densenet121py':
             net = densenetpy.densenet121(pretrained=True)
         elif archname == 'mobilenetv2py':
-            net = models.mobilenet.mobilenet_v2(pretrained=True)
+            net = mobilenetpy.mobilenet_v2(pretrained=True)
         images = datasets.ImageNet(root='~/Developer/ILSVRC2012_devkit_t12',\
                                    split='val',transform=transdata)
         images.samples = images.samples[::len(images.samples)//testsize]

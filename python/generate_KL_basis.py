@@ -24,11 +24,11 @@ for l in range(0,len(layers)):
         layer_weights = layers[l].weight
         layer_weights = layer_weights.flatten(2).permute(perm).flatten(1).permute(flip)
         covH = np.array(layer_weights.mm(layer_weights.permute([1,0])).to('cpu'),dtype=np.float64)
-        if tranname == 'klt':
-            _, U = linalg.eigh(covH)
-        elif tranname == 'idt':
+        if tranname == 'idt' or layers[l].groups > 1:
             U = np.eye(covH.shape[0])
-        else:
+        elif tranname == 'klt':
+            _, U = linalg.eigh(covH)
+        elif tranname == 'elt':
             covars = common.loadvarstats(archname,trantype,testsize)
             covG = np.array(covars[0,l],dtype=np.float64)
             covG = np.linalg.inv(covG + (0.001*np.linalg.norm(covG))*np.eye(covG.shape[0]))
