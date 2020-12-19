@@ -20,9 +20,9 @@ maxrates = 16
 neural, images, labels = loadnetwork(archname,gpuid,testsize)
 
 neural = convert_qconv(neural)
-layers = findconv(neural,False)
-dimens = hookconv(neural,False)
-
+layers = findlayers(neural,(trans.QAConv2d))
+dimens = hooklayers(neural,(trans.QAConv2d))
+print(neural)
 neural.eval()
 Y = predict(neural,images)
 Y_cats = gettop1(Y)
@@ -41,14 +41,14 @@ for l in range(0,len(layers)):
 
         scale = 0
         coded = Inf
-        start = scale
+        start = scale 
         for b in range(0,maxrates):
             last_Y_sse = Inf
             last_W_sse = Inf
             for j in range(0,maxsteps):
                 sec = time.time()
                 delta = start + 0.25*j
-                coded = dimens[l].prod()
+                coded = int(dimens[l].prod())
                 layers[l].quantized, layers[l].coded, layers[l].delta = True, [coded*b], [delta]
                 Y_hats = predict(neural,images)
                 Y_cats = gettop1(Y_hats)
@@ -64,7 +64,7 @@ for l in range(0,len(layers)):
                 mean_coded = acti_coded[b,j,0]
                 
                 #print('%d, %d, %f' % (b, j, acti_Y_sse[b,j,0]))
-                if mean_Y_sse > last_Y_sse or\
+                if b >= 2 and mean_Y_sse > last_Y_sse or\
                    b == 0:
                     break
 

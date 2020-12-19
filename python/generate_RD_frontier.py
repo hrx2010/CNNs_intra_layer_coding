@@ -24,9 +24,9 @@ srcnet, images, labels = loadnetwork(archname,gpuid,testsize)
 tarnet, images, labels = loadnetwork(archname,gpuid,testsize)
 tarnet = convert_qconv(tarnet)
 
-srclayers = findconv(srcnet,False)
-tarlayers = findconv(tarnet,False)
-tardimens = hookconv(tarnet,False)
+srclayers = findlayers(srcnet,nn.Conv2d)
+tarlayers = findlayers(tarnet,transconv.QAConv2d)
+tardimens = hooklayers(tarnet,transconv.QAConv2d)
 
 perm, flip = getperm(trantype)
 
@@ -63,13 +63,13 @@ for j in range(0,maxsteps):
             layer_weights = layer_weights.flatten(1).permute(flip)
             trans_weights = basis_vectors[:,:,0].mm(layer_weights)
             ##load files here
-            if codekern:
+            if codekern and srclayers[l].groups >= 1:
                 kern_Y_sse, kern_delta, kern_coded = loadrdcurves(archname,tranname,trantype,l, 'kern')
                 kern_Y_sse, kern_delta, kern_coded = findrdpoints(kern_Y_sse,kern_delta,kern_coded, 2**slope)
-            if codebase:
+            if codebase and srclayers[l].groups == 1:
                 base_Y_sse, base_delta, base_coded = loadrdcurves(archname,tranname,trantype,l, 'base')
                 base_Y_sse, base_delta, base_coded = findrdpoints(base_Y_sse,base_delta,base_coded, 2**slope)
-            if codeacti:
+            if codeacti and srclayers[l].groups >= 1:
                 acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,tranname,trantype,l, 'acti')
                 acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**slope)
 
@@ -79,17 +79,17 @@ for j in range(0,maxsteps):
                 scale = (trans_weights[rs,:].reshape(-1)**2).mean().sqrt().log2().floor()
                 if scale < -20:
                     continue
-                if codekern:
+                if codekern and srclayers[l].groups >= 1:
                     trans_weights[rs,:] = quantize(trans_weights[rs,:],2**kern_delta[i],\
                                                    kern_coded[i]/(len(rs)*trans_weights.shape[1]))
                     pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + kern_Y_sse[i]
                     hist_sum_coded[j] = hist_sum_coded[j] + kern_coded[i]
-                if codebase:
+                if codebase and srclayers[l].groups == 1:
                     basis_vectors[:,rs] = quantize(basis_vectors[:,rs],2**base_delta[i],\
                                                    base_coded[i]/(len(rs)*basis_vectors.shape[0]))
                     pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + base_Y_sse[i]
                     hist_sum_coded[j] = hist_sum_coded[j] + base_coded[i]
-            if codeacti:
+            if codeacti and srclayers[l].groups >= 1:
                 pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + acti_Y_sse[0]
                 hist_sum_coded[j] = hist_sum_coded[j] + acti_coded[0]
                 hist_sum_denom[j] = hist_sum_denom[j] + dimens[l].prod()

@@ -1,3 +1,4 @@
+import torch.nn as nn
 import common
 import header
 import importlib
@@ -16,7 +17,7 @@ maxsteps = 32
 maxrates = 17
 
 neural, images, labels = loadnetwork(archname,gpuid,testsize)
-layers = findconv(neural,False)
+layers = findlayers(neural,(nn.Conv2d))
 perm, flip = getperm(trantype)
 
 gainw = [None] * len(layers)

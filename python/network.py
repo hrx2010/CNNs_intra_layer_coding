@@ -1,9 +1,10 @@
+import torch.nn as nn
 import transconv
 import common
 from common import *
 
 def transform(network,trantype,tranname,archname,bitdepth,rdlambda,codekern,codebase,codeacti):
-    layers = findconv(network,False)
+    layers = findlayers(network,(nn.Conv2d))
     perm, flip = getperm(trantype)
 
     with torch.no_grad():
@@ -28,31 +29,22 @@ def transform(network,trantype,tranname,archname,bitdepth,rdlambda,codekern,code
                 acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,tranname,trantype,l, 'acti')
                 acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**rdlambda)
 
-            stride = min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
+            block = min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
             basis_vectors = basis_vectors[:,:,1].permute(inv(perm[0:2]))
             trans_weights = trans_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).reshape(layers[l].weight.size())
-            layers[l] = transconv.convert_tconv(basis_vectors,trans_weights,layers[l].bias,layers[l].stride,layers[l].padding,\
-                                                trantype,stride,kern_coded,kern_delta,base_coded,base_delta,acti_coded,acti_delta,\
+            layers[l] = transconv.convert_tconv(layers[l],basis_vectors,trans_weights,\
+                                                trantype,block,kern_coded,kern_delta,base_coded,base_delta,acti_coded,acti_delta,\
                                                 codekern,codebase,codeacti)
-        network = replaceconv(network,layers,includenorm=False)
+        network = replacelayer(network,[layers], (nn.Conv2d))
 
     return network.to(common.device)
 
 def convert_qconv(network):
-    layers = findconv(network, includenorm=False)
+    layers = findlayers(network, (nn.Conv2d))
 
     with torch.no_grad():
         for l in range(0,len(layers)):
-            layers[l] = transconv.QAConv2d(layers[l], 0, 0)
+            layers[l] = transconv.QAConv2d(layers[l], [0], [0])
         
-        network = replaceconv(network, layers, includenorm=False)
+        network = replacelayer(network, [layers], (nn.Conv2d))
     return network.to(common.device)
-
-def quantize(network):
-    layers = findconv(network,False)
-    with torch.no_grad():
-        for l in range(0,len(layers)):
-            layers[l].quantize()
-
-    return network.to(common.device)
-

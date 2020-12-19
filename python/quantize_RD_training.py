@@ -27,7 +27,7 @@ print('%s %s | slope: %+5.1f, top1: %5.2f' % (archname, tranname, rdlambda, 100*
 
 # quantize
 
-epochs = 3
+epochs = 100
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(neural.parameters(),lr=0.001, weight_decay=0.0001, momentum=0.9)
 

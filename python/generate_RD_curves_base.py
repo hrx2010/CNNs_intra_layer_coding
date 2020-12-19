@@ -1,3 +1,4 @@
+import torch.nn as nn
 import common
 import header
 import importlib
@@ -25,7 +26,7 @@ mean_Y_top = (Y_cats == labels).double().mean()
 print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
 
 perm, flip = getperm(trantype)
-layers = findconv(neural,False)
+layers = findlayers(neural,(nn.Conv2d))
 
 for l in range(0,len(layers)):
     with torch.no_grad():

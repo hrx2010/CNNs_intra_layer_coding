@@ -3,23 +3,24 @@ import torch.nn as nn
 import common
 from header import *
 
-def convert_tconv(base, kern, bias, stride, padding, trantype, block, \
+def convert_tconv(layer, base, kern, trantype, block, \
                   kern_coded, kern_delta, base_coded, base_delta, acti_coded, acti_delta, \
                   codekern, codebase, codeacti):
 
     if trantype == 'inter':
-        conv1 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=None,weights=base,\
-                         delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
-        conv2 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=bias,weights=kern,perm=True,\
-                         stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
+        conv1 = QWConv2d(layer.in_channels,layer.in_channels,kernel_size=1,bias=None,weights=base,\
+                         delta=base_delta,coded=base_coded,block=block,is_quantized=codebase) if layer.groups == 1 \
+                         else nn.Identity()
+        conv2 = QWConv2d(layer.in_channels,layer.out_channels,kernel_size=layer.kernel_size,bias=layer.bias,weights=kern,perm=True,\
+                         stride=layer.stride,padding=layer.padding,groups=layer.groups,delta=kern_delta,coded=kern_coded,\
                          block=block,is_quantized=codekern)
     elif trantype == 'exter':
-        conv1 = QWConv2d(kern.shape[1],kern.shape[0],kernel_size=kern.shape[2],bias=None,weights=kern,\
-                         stride=stride,padding=padding,delta=kern_delta,coded=kern_coded,\
+        conv1 = QWConv2d(layer.in_channels,layer.out_channels,kernel_size=layer.kernel_size,bias=None,weights=kern,\
+                         stride=layer.stride,padding=layer.padding,groups=layers.groups,delta=kern_delta,coded=kern_coded,\
                          block=block,is_quantized=codekern)
-        conv2 = QWConv2d(base.shape[1],base.shape[0],kernel_size=1,bias=bias,weights=base,perm=True,\
-                         delta=base_delta,coded=base_coded,block=block,is_quantized=codebase)
-
+        conv2 = QWConv2d(layer.out_channels,layer.out_channels,kernel_size=1,bias=layer.bias,weights=base,perm=True,\
+                         delta=base_delta,coded=base_coded,block=block,is_quantized=codebase) if layer.groups == 1 \
+                         else nn.Identity()
     return QAConv2d(nn.Sequential(conv1, conv2), acti_delta, acti_coded, codeacti)
 
 class QAConv2d(nn.Module):
@@ -48,7 +49,7 @@ class QAConv2d(nn.Module):
         return self.layer(input)
     
     def extra_repr(self):
-        dic = {'depth':self.coded/self.numel, 'delta':self.delta, 'quantized':self.quantized}
+        dic = {'depth':[self.coded[0]/self.numel], 'delta':self.delta, 'quantized':self.quantized}
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
         return self.layer.__repr__() + ', ' + s.format(**dic)
 
@@ -112,9 +113,9 @@ class QWConv2d(nn.Conv2d):
             param.requires_grad = is_quantized
 
     def extra_repr(self):
-        numel = (self.weight.shape[1] if self.perm else self.weight.shape[0])/self.block
-        depth = [self.coded[i]/self.weight.numel()*numel for i in range(0,len(self.coded),self.block)]
-        delta = [self.delta[i] for i in range(0,len(self.delta),self.block)]
+        numel = (self.weight.numel() * self.block / (self.weight.shape[1] if self.perm else self.weight.shape[0]))
+        depth = [self.coded[i] / numel for i in range(0,len(self.coded),self.block)][0:8]
+        delta = [self.delta[i] for i in range(0,len(self.delta),self.block)][0:8]
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
         dic = {'depth':depth, 'delta':delta, 'quantized':self.is_quantized}
         return super().extra_repr() + ', ' + s.format(**dic)

@@ -199,12 +199,19 @@ def replaceconv(net,layers,includenorm=True):
     pushconv([layers],net,includenorm,direction=1)
     return net
 
-def hookconv(net,includenorm=True):
-    layers = findconv(net,includenorm)
+def hooklayers(net, classes):
+    layers = findlayers(net, classes)
     return [Hook(layer) for layer in layers]
 
 def findconv(net,includenorm=True):
     layers = pushconv([[]],net,includenorm)
+    return layers
+
+def findlayers(net, classes):
+    layers = []
+    for m in net.modules():
+        if isinstance(m, classes):
+            layers.append(m)
     return layers
 
 def pushattr(layers,container,attr,includenorm,direction):
@@ -290,6 +297,17 @@ def pushconv(layers,container,includenorm=True,direction=0):
     #     for l in range(0,len(container.conv)):
     #         pushconv(layers,ptrids,container.conv[l],includenorm)
     return layers[0]
+
+def replacelayer(module, layers, classes):
+    module_output = module
+    # base case
+    if isinstance(module, classes):
+        module_output, layers[0] = layers[0][0], layers[0][1:]
+    # recursive
+    for name, child in module.named_children():
+        module_output.add_module(name, replacelayer(child, layers, classes))
+    del module
+    return module_output
 
 def permute(layer,dimen):
     if isinstance(layer, torch.nn.Conv2d):
