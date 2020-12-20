@@ -29,7 +29,7 @@ mean_Y_top = (Y_cats == labels).double().mean()
 print('%s %s | top1: %5.2f' % (archname, trantype, 100*mean_Y_top))
 
 
-layers = findconv(model,includenorm=False)
+layers = findlayers(model,(nn.Conv2d))
 cov = [torch.zeros(1).to(common.device)] * len(layers)
 iperm,itran = getperm(trantype)
 

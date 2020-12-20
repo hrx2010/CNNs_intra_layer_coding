@@ -1,3 +1,4 @@
+import torch.nn as nn
 import sys
 import scipy
 import scipy.io as io
@@ -15,7 +16,7 @@ testsize = int(sys.argv[4])
 gpuid   = gpuid if len(sys.argv) < 6 else int(sys.argv[5])
 
 neural, _, _ = loadnetwork(archname,gpuid,1)
-layers = common.findconv(neural,False)
+layers = common.findlayers(neural,(nn.Conv2d))
 perm, flip = getperm(trantype)
 
 overhead = [None] * len(layers)
