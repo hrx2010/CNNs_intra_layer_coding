@@ -20,8 +20,8 @@ maxrates = 16
 neural, images, labels = loadnetwork(archname,gpuid,testsize)
 
 neural = convert_qconv(neural)
-layers = findlayers(neural,(trans.QAConv2d))
-dimens = hooklayers(neural,(trans.QAConv2d))
+layers = findlayers(neural,(transconv.QAConv2d))
+dimens = hooklayers(neural,(transconv.QAConv2d))
 print(neural)
 neural.eval()
 Y = predict(neural,images)
