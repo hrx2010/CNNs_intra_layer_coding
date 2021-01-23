@@ -64,7 +64,7 @@ def findrdpoints(y_sse,delta,coded,lam_or_bit, is_bit=False):
 
 def loaddataset(gpuid,testsize):
     global device
-    device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     images = datasets.ImageNet(\
                 root='~/Developer/ILSVRC2012_devkit_t12',\
                 split='val',transform=transdata)
@@ -73,9 +73,9 @@ def loaddataset(gpuid,testsize):
 
     return images, labels.to(device)
 
-def loadnetwork(archname,gpuid,testsize,dataset='imagenet'):
+def loadnetwork(archname,testsize=50000,dataset='imagenet'):
     global device
-    device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     if dataset == 'imagenet':
         if archname == 'alexnetpy':
@@ -92,53 +92,13 @@ def loadnetwork(archname,gpuid,testsize,dataset='imagenet'):
             net = densenetpy.densenet121(pretrained=True)
         elif archname == 'mobilenetv2py':
             net = mobilenetpy.mobilenet_v2(pretrained=True)
-        images = datasets.ImageNet(root='~/Developer/ILSVRC2012_devkit_t12',\
-                                   split='val',transform=transdata)
-        images.samples = images.samples[::len(images.samples)//testsize]
-        labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
-    elif dataset == 'cifar10':
-        if archname == 'resnet18py':
-            net = cifar10_models.resnet.resnet18(pretrained=True)
-        elif archname == 'resnet34py':
-            net = cifar10_models.resnet.resnet34(pretrained=True)
-        elif archname == 'resnet50py':
-            net = cifar10_models.resnet.resnet50(pretrained=True)
-        elif archname == 'densenet121py':
-            net = difar10_models.densenet.densenet121(pretrained=True)
-        images = datasets.CIFAR10('~/Developer/',download=True,transform=transcifar10)
-        images.data = images.data[::len(images.data)//testsize]
-        images.targets = images.targets[::len(images.targets)//testsize]
-        labels = torch.tensor([images.targets])
-        # load the dataset
-    return net.to(device), images, labels.to(device)
-
-
-def loadnetwork2(archname,gpuid,testsize=50000,dataset='imagenet'):
-    global device
-    device = torch.device("cuda:"+str(gpuid) if torch.cuda.is_available() else "cpu")
-
-    if dataset == 'imagenet':
-        if archname == 'alexnetpy':
-            net = alexnetpy.alexnet(pretrained=True)
-        elif archname == 'vgg16py':
-            net = vggpy.vgg16_bn(pretrained=True)
-        elif archname == 'resnet18py':
-            net = resnetpy.resnet18(pretrained=True)
-        elif archname == 'resnet34py':
-            net = resnetpy.resnet34(pretrained=True)
-        elif archname == 'resnet50py':
-            net = resnetpy.resnet50(pretrained=True)
-        elif archname == 'densenet121py':
-            net = densenetpy.densenet121(pretrained=True)
-        elif archname == 'mobilenetv2py':
-            net = mobilenetpy.mobilenet_v2(pretrained=True)
-
-        images = datasets.ImageNet(root='/home/data/wangzhe/data/ImageNet2012',\
+        images = datasets.ImageNet(root='../data/ILSVRC2012_devkit_t12',\
                                    split='train',transform=transdata)
-        labels = torch.tensor([images.samples[i][1] for i in range(0, len(images))])
+        labels = torch.tensor([images.samples[i][1] for i in range(0,len(images))])
 
-        images_val = datasets.ImageNet(root='/home/data/wangzhe/data/ImageNet2012',\
+        images_val = datasets.ImageNet(root='../data/ILSVRC2012_devkit_t12',\
                                    split='val',transform=transdata)
+        images_val.samples = images_val.samples[::len(images_val.samples)//testsize]
 
         labels_val = torch.tensor([images_val.samples[i][1] for i in range(0,len(images_val))])
 

@@ -3,7 +3,7 @@ import transconv
 import common
 from common import *
 
-def transform(network,trantype,tranname,archname,bitdepth,rdlambda,codekern,codebase,codeacti):
+def transform(network,trantype,tranname,archname,rdlambda,codekern,codebase,codeacti):
     layers = findlayers(network,(nn.Conv2d))
     perm, flip = getperm(trantype)
 
