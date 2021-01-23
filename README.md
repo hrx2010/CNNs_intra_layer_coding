@@ -18,6 +18,6 @@ Here, `100 1 1 0` means use `100` ILSVRC2012 validation images, quantize basis `
 
 4. Modifying the code to work with `your_own_cnn` instead of `resnet18py`.\
 Essentially, you'll need to have a notion of MSE for your network output. First, make sure dense layers in `your_own_cnn` are represented as 
-`1x1-conv` layers. Modify `common.py:loadnetwork` to load `your_own_cnn`. Modify `common.py:predict` to appropriately return the output 
+`1x1-conv` layers. Second, modify `common.py:loadnetwork` to load `your_own_cnn` and  `common.py:predict` to appropriately return the output 
 of your CNN.
 
