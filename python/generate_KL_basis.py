@@ -12,9 +12,8 @@ trantype = str(sys.argv[1])
 tranname = str(sys.argv[2])
 archname = str(sys.argv[3])
 testsize = int(sys.argv[4])
-gpuid   = gpuid if len(sys.argv) < 6 else int(sys.argv[5])
 
-neural, _, _ = loadnetwork(archname,gpuid,1)
+neural, _, _, _, _ = loadnetwork(archname, testsize)
 layers = common.findlayers(neural,(nn.Conv2d))
 perm, flip = getperm(trantype)
 

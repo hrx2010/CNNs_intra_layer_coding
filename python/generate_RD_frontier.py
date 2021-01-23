@@ -15,13 +15,12 @@ testsize = int(sys.argv[4])
 codebase = True if len(sys.argv) < 6 else bool(int(sys.argv[5]))
 codekern = True if len(sys.argv) < 7 else bool(int(sys.argv[6]))
 codeacti = True if len(sys.argv) < 8 else bool(int(sys.argv[7]))
-gpuid   = gpuid if len(sys.argv) < 9 else int(sys.argv[8])
 
 maxsteps = 48
 maxrates = 17
 
-srcnet, images, labels = loadnetwork(archname,gpuid,testsize)
-tarnet, images, labels = loadnetwork(archname,gpuid,testsize)
+srcnet, _, _, images, labels = loadnetwork(archname,testsize)
+tarnet, _, _, images, labels = loadnetwork(archname,testsize)
 tarnet = convert_qconv(tarnet)
 
 srclayers = findlayers(srcnet,nn.Conv2d)
