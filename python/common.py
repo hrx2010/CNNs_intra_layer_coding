@@ -17,6 +17,8 @@ import alexnetpy
 import densenetpy
 import mobilenetpy
 
+from header import Inf
+
 device = None
 
 batch_size = 25
@@ -160,9 +162,12 @@ def inv(perm):
     return inverse
 
 def quantize(weights, delta, b):
+    if b == Inf:
+        return weights
+
     if b > 0:
         minpoint = -(2**(b-1))*delta
-        maxpoint = +(2**(b-1))*delta
+        maxpoint =  (2**(b-1) - 1)*delta
     else:
         minpoint = 0
         maxpoint = 0

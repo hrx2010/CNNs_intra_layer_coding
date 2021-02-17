@@ -78,10 +78,10 @@ class QWConv2d(nn.Conv2d):
     class Quantize(torch.autograd.Function):
         @staticmethod
         def forward(ctx, quant, delta, coded, block, perm):
-            quant = quant.permute([1,0,2,3]) if perm else quant
+            quant = quant.permute([1,0,2,3]).clone() if perm else quant.clone()
             for i in range(0,quant.shape[0],block):
-                if delta[i] == Inf:
-                    delta[i] = coded[i] = 0
+                # if delta[i] == Inf:
+                #     delta[i] = coded[i] = 0
                 rs = range(i,min(i+block,quant.shape[0]))
                 quant[rs,:] = common.quantize(quant[rs,:],2**delta[i],coded[i]/quant[rs,:].numel())
             quant = quant.permute([1,0,2,3]) if perm else quant
@@ -112,35 +112,23 @@ class QWConv2d(nn.Conv2d):
         for param in self.parameters():
             param.requires_grad = is_quantized
 
+    def get_bands(self, rs):
+        return self.weight[:,rs] if self.perm else self.weight[rs,:]
+
+    def num_bands(self):
+        return self.weight.shape[1] if self.perm else self.weight.shape[0]
+
+    def get_bandwidth(self):
+        shape = torch.tensor(self.weight.shape)
+        return int(torch.ceil(shape[1]/8)) if self.perm else int(torch.ceil(shape[0]/8))
+
     def extra_repr(self):
         numel = (self.weight.numel() * self.block / (self.weight.shape[1] if self.perm else self.weight.shape[0]))
         depth = [self.coded[i] / numel for i in range(0,len(self.coded),self.block)][0:8]
         delta = [self.delta[i] for i in range(0,len(self.delta),self.block)][0:8]
-        s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
-        dic = {'depth':depth, 'delta':delta, 'quantized':self.is_quantized}
+        s = ('bit_depth={depth}, step_size={delta}, transpose={perm}, quantized={quantized}')
+        dic = {'depth':depth, 'delta':delta, 'perm':self.perm, 'quantized':self.is_quantized}
         return super().extra_repr() + ', ' + s.format(**dic)
-
-    # def __repr__(self):
-    #     # We treat the extra repr like the sub-module, one item per line
-    #     extra_lines = []
-    #     extra_repr = self.extra_repr()
-    #     # empty string will be split into list ['']
-    #     if extra_repr:
-    #         extra_lines = extra_repr.split('\n')
-    #     child_lines = []
-    #     lines = extra_lines + child_lines
-
-    #     main_str = self._get_name() + '('
-    #     if lines:
-    #         # simple one-liner info, which most builtin Modules will use
-    #         if len(extra_lines) == 1 and not child_lines:
-    #             main_str += extra_lines[0]
-    #         else:
-    #             main_str += '\n  ' + '\n  '.join(lines) + '\n'
-
-    #     main_str += ')'
-    #     return main_str
-
 
     def forward(self, input):
         weight = self.quant(self.weight, self.delta, self.coded, self.block, self.perm) if self.is_quantized else self.weight
