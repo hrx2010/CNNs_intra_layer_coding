@@ -34,11 +34,12 @@ for l in range(0,len(layers)):
         kern_W_sse = torch.ones(maxrates,maxsteps,layers[l].num_bands(),device=getdevice()) * Inf
         kern_Y_sse = torch.ones(maxrates,maxsteps,layers[l].num_bands(),device=getdevice()) * Inf
         kern_Y_top = torch.ones(maxrates,maxsteps,layers[l].num_bands(),device=getdevice()) * Inf
-        s = layers[l].get_bandwidth() # min(int(np.ceil(trans_weights.size(0)/8)),int(np.ceil(trans_weights.size(1)/8)))
+        s = layers[l].get_bandwidth()
 
         for i in range(0,layers[l].num_bands(),s):
             rs = range(i,min(i+s,layers[l].num_bands()))
-            scale = float((layers[l].get_bands(rs) ** 2).mean().sqrt().log2().floor())
+            bands = layers[l].get_bands(rs)
+            scale = float((bands ** 2).mean().sqrt().log2().floor())
 
             coded = Inf
             start = scale - 2
@@ -48,7 +49,7 @@ for l in range(0,len(layers)):
                 for j in range(0,maxsteps):
                     sec = time.time()
                     delta = start + 0.25*j
-                    coded = layers[l].get_bands(rs).numel()
+                    coded = bands.numel()
 
                     layers[l].is_quantized = True
                     layers[l].delta[i] = delta
@@ -57,7 +58,7 @@ for l in range(0,len(layers)):
                     Y_hats = predict(neural,images)
                     Y_cats = gettop1(Y_hats)
                     sec = time.time() - sec
-                    kern_W_sse[b,j,i] = ((layers[l].get_bands(rs) - common.quantize(layers[l].get_bands(rs),2**delta,b))**2).mean()
+                    kern_W_sse[b,j,i] = ((bands - common.quantize(bands,2**delta, b)) ** 2).mean()
                     kern_Y_sse[b,j,i] = ((Y_hats - Y)**2).mean()
                     kern_Y_top[b,j,i] = (Y_cats == labels).double().mean()
                     kern_delta[b,j,i] = delta
@@ -92,7 +93,7 @@ for l in range(0,len(layers)):
                       % (archname, l, len(layers), i, layers[l].num_bands(),\
                          delta, mean_Y_sse, mean_W_sse, 100*mean_Y_top, coded, b, sec))
 
-        io.savemat(('%s_%s_val_%03d_%04d_output_%s_kern.mat' % (archname,tranname,l,testsize,trantype)),\
+        io.savemat(('%s_%s_val_%03d_%04d_output_%s_kern.mat' % (archname,'idt',l,testsize,'inter')),\
                    {'kern_coded':kern_coded.cpu().numpy(),'kern_Y_sse':kern_Y_sse.cpu().numpy(),\
                     'kern_Y_top':kern_Y_top.cpu().numpy(),'kern_delta':kern_delta.cpu().numpy(),\
                     'kern_W_sse':kern_W_sse.cpu().numpy()})
