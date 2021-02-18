@@ -42,7 +42,7 @@ for l in range(0,len(layers)):
             scale = float((bands ** 2).mean().sqrt().log2().floor())
 
             coded = Inf
-            start = scale - 2
+            start = scale + 4
             for b in range(0,maxrates):
                 last_Y_sse = Inf
                 last_W_sse = Inf
@@ -84,7 +84,7 @@ for l in range(0,len(layers)):
 
                 _,  j = kern_Y_sse[b,:,i].min(0)
                 delta = kern_delta[b,j,i]
-                start = delta - 2
+                start = float(delta - 2)
                 mean_W_sse = kern_W_sse[b,j,i]
                 mean_Y_sse = kern_Y_sse[b,j,i]
                 mean_Y_top = kern_Y_top[b,j,i]

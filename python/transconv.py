@@ -49,7 +49,7 @@ class QAConv2d(nn.Module):
         return self.layer(input)
     
     def extra_repr(self):
-        dic = {'depth':[self.coded[0]/self.numel], 'delta':self.delta, 'quantized':self.quantized}
+        dic = {'depth':[self.coded[0]/self.numel], 'delta':[self.delta[0]], 'quantized':self.quantized}
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
         return self.layer.__repr__() + ', ' + s.format(**dic)
 
@@ -78,7 +78,7 @@ class QWConv2d(nn.Conv2d):
     class Quantize(torch.autograd.Function):
         @staticmethod
         def forward(ctx, quant, delta, coded, block, perm):
-            quant = quant.permute([1,0,2,3]).clone() if perm else quant.clone()
+            quant = quant.clone().permute([1,0,2,3]) if perm else quant.clone()
             for i in range(0,quant.shape[0],block):
                 # if delta[i] == Inf:
                 #     delta[i] = coded[i] = 0
