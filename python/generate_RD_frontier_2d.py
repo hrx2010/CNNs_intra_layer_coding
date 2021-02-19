@@ -43,31 +43,6 @@ for j in range(0,maxsteps):
     with torch.no_grad():
         slope = -30 + 0.5*j
         sec = time.time()
-        # for l in range(0,max(len(w_layers),len(a_layers))):
-
-        #     if codekern:
-        #         hist_sum_denom[j] = hist_sum_denom[j] + w_layers[l].weight.numel()
-        #         kern_Y_sse, kern_delta, kern_coded = loadrdcurves(archname,'idt','inter',l, 'kern')
-        #         kern_Y_sse, kern_delta, kern_coded = findrdpoints(kern_Y_sse,kern_delta,kern_coded, 2**slope)
-        #         stride = w_layers[l].get_bandwidth()
-        #         for i in range(0,w_layers[l].num_bands(),stride):
-        #             w_layers[l].is_quantized = True
-        #             w_layers[l].delta[i] = kern_delta[i]
-        #             w_layers[l].coded[i] = kern_coded[i]
-        #             pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + kern_Y_sse[i]
-        #             hist_sum_coded[j] = hist_sum_coded[j] + kern_coded[i]
-
-        #     if codeacti:
-        #         hist_sum_denom[j] = hist_sum_denom[j] + a_dimens[l].prod()
-        #         acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,'idt','inter',l, 'acti')
-        #         acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**slope)
-        #         stride = a_layers[l].get_bandwidth()
-        #         for i in range(0,a_layers[l].num_bands(),stride):
-        #             a_layers[l].is_quantized = True
-        #             a_layers[l].coded[i] = acti_coded[i]
-        #             a_layers[l].delta[i] = acti_delta[i]
-        #             pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + acti_Y_sse[i]
-        #             hist_sum_coded[j] = hist_sum_coded[j] + acti_coded[i]
 
         pred_sum_Y_sse[j], hist_sum_coded[j], hist_sum_denom[j] = \
             network.quantize_slope_2d(neural, archname, slope, codekern, codeacti)
