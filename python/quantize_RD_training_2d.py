@@ -15,13 +15,11 @@ basic_lr = 1e-4 if len(sys.argv) < 7 else float(sys.argv[6])
 batch_size = 64 if len(sys.argv) < 8 else   int(sys.argv[7])
 nepoch = 10     if len(sys.argv) < 9 else   int(sys.argv[8])
 
-neural, images, labels, images_val, labels_val= loadnetwork(archname,testsize=testsize)
+neural, images, labels, images_val, labels_val= loadnetwork(archname,testsize)
 
 network.quantize_2d(neural)
 neural = neural.to(common.device)
 
-w_layers = findlayers(neural,transconv.QWConv2d)
-a_layers = findlayers(neural,transconv.QAConv2d)
 a_dimens = hooklayers(neural,transconv.QAConv2d)
 
 neural.eval()

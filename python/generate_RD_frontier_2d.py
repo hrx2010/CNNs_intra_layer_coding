@@ -18,8 +18,6 @@ neural, _, _, images, labels = loadnetwork(archname,testsize)
 network.quantize_2d(neural)
 neural = neural.to(common.device)
 
-w_layers = findlayers(neural,transconv.QWConv2d)
-a_layers = findlayers(neural,transconv.QAConv2d)
 a_dimens = hooklayers(neural,transconv.QAConv2d)
 
 neural.eval()
