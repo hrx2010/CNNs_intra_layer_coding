@@ -1,35 +1,30 @@
 import common
 import header
 import importlib
-importlib.reload(common)
-importlib.reload(header)
+import network
 
 from common import *
 from header import *
-from network import convert_qconv
 
-trantype = str(sys.argv[1])
-tranname = str(sys.argv[2])
-archname = str(sys.argv[3])
-testsize = int(sys.argv[4])
-gpuid   = gpuid if len(sys.argv) < 6 else int(sys.argv[5])
+archname = str(sys.argv[1])
+testsize = int(sys.argv[2])
 
 maxsteps = 32
 maxrates = 16
 
-neural, images, labels = loadnetwork(archname,gpuid,testsize)
+neural, _, _, images, labels = loadnetwork(archname,testsize)
+network.quantize_2d(neural)
+neural = neural.to(common.device)
 
-neural = convert_qconv(neural)
 layers = findlayers(neural,(transconv.QAConv2d))
 dimens = hooklayers(neural,(transconv.QAConv2d))
 print(neural)
 neural.eval()
 Y = predict(neural,images)
-Y_cats = gettop1(Y)
-mean_Y_top = (Y_cats == labels).double().mean()
+mean_Y_top = (Y.topk(1,dim=1)[1] == labels[:,None]).double().mean()
 dimens = [dimens[i].input for i in range(0,len(dimens))]
 
-print('%s %s | top1: %5.2f' % (archname, tranname, 100*mean_Y_top))
+print('%s | top1: %5.2f' % (archname, 100*mean_Y_top))
 
 for l in range(0,len(layers)):
     with torch.no_grad():
@@ -49,7 +44,7 @@ for l in range(0,len(layers)):
                 sec = time.time()
                 delta = start + 0.25*j
                 coded = int(dimens[l].prod())
-                layers[l].quantized, layers[l].coded, layers[l].delta = True, [coded*b], [delta]
+                layers[l].is_quantized, layers[l].coded, layers[l].delta = True, [coded*b], [delta]
                 Y_hats = predict(neural,images)
                 Y_cats = gettop1(Y_hats)
                 sec = time.time() - sec
@@ -76,13 +71,13 @@ for l in range(0,len(layers)):
             start = delta - 2
             mean_Y_sse = acti_Y_sse[b,j,0]
             mean_Y_top = acti_Y_top[b,j,0]
-            print('%s %s | layer: %03d/%03d, delta: %+6.2f, '
+            print('%s | layer: %03d/%03d, delta: %+6.2f, '
                   'mse: %5.2e (%5.2e), top1: %5.2f, numel: %5.2e, rate: %4.1f, time: %5.2fs'\
-                  % (archname, tranname, l, len(layers), delta, mean_Y_sse, mean_Y_sse, 100*mean_Y_top,\
+                  % (archname, l, len(layers), delta, mean_Y_sse, mean_Y_sse, 100*mean_Y_top,\
                      coded, b, sec))
 
-        layers[l].quantized, layers[l].coded, layers[l].delta = False, [0], [0]
+        layers[l].is_quantized, layers[l].coded, layers[l].delta = False, [Inf], [Inf]
 
-        io.savemat(('%s_%s_val_%03d_%04d_output_%s_acti.mat' % (archname,tranname,l,testsize,trantype)),\
+        io.savemat(('%s_%s_val_%03d_%04d_output_%s_acti.mat' % (archname,'idt',l,testsize,'inter')),\
                    {'acti_coded':acti_coded.cpu().numpy(),'acti_Y_sse':acti_Y_sse.cpu().numpy(),\
                     'acti_Y_top':acti_Y_top.cpu().numpy(),'acti_delta':acti_delta.cpu().numpy()})

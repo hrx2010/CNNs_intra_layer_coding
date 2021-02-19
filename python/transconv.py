@@ -33,10 +33,10 @@ class QAConv2d(nn.Module):
         def backward(ctx, grad_output):
             return grad_output, None, None
 
-    def __init__(self, layer, delta, coded, quantized=False):
+    def __init__(self, layer, delta, coded, is_quantized=False):
         super(QAConv2d, self).__init__()
         self.quant = self.Quantize.apply
-        self.quantized = quantized
+        self.is_quantized = is_quantized
         self.layer = layer
         self.delta = delta
         self.coded = coded
@@ -44,12 +44,12 @@ class QAConv2d(nn.Module):
 
     def forward(self, input):
         self.numel = input[0].numel()
-        if self.quantized:
+        if self.is_quantized:
             input = self.quant(input, self.delta, self.coded) 
         return self.layer(input)
     
     def extra_repr(self):
-        dic = {'depth':[self.coded[0]/self.numel], 'delta':[self.delta[0]], 'quantized':self.quantized}
+        dic = {'depth':[self.coded[0]/self.numel], 'delta':[self.delta[0]], 'quantized':self.is_quantized}
         s = ('bit_depth={depth}, step_size={delta}, quantized={quantized}')
         return self.layer.__repr__() + ', ' + s.format(**dic)
 

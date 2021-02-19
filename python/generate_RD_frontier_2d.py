@@ -64,9 +64,9 @@ for j in range(0,maxsteps):
                 acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**slope)
                 stride = a_layers[l].get_bandwidth()
                 for i in range(0,a_layers[l].num_bands(),stride):
-                    a_layers[l].quantized = True
+                    a_layers[l].is_quantized = True
                     a_layers[l].coded[i] = acti_coded[i]
-                    a_layers[l].delta[i] = acti_delta[i]#, a_layers[l].delta = True, acti_coded, acti_delta
+                    a_layers[l].delta[i] = acti_delta[i]
                     pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + acti_Y_sse[i]
                     hist_sum_coded[j] = hist_sum_coded[j] + acti_coded[i]
 
