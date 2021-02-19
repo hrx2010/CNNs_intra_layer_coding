@@ -67,6 +67,6 @@ def quantize_2d(network):
 def convert_qwconv(conv, perm):
     size = conv.in_channels if perm else conv.out_channels
     conv = transconv.QWConv2d(conv.in_channels, conv.out_channels, conv.kernel_size, conv.weight,\
-                                                [NaN]*size, [NaN]*size, size//8, False,\
+                                                [Inf]*size, [Inf]*size, size//8, False,\
                                                 conv.stride, conv.padding, conv.groups, conv.bias, perm)
-    return transconv.QAConv2d(conv, delta=[NaN], coded=[NaN], is_quantized=False)
+    return transconv.QAConv2d(conv, delta=[Inf], coded=[Inf], is_quantized=False)

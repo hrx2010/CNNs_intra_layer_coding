@@ -1,10 +1,7 @@
-import torch.nn as nn
 import common
 import header
 import importlib
 import network
-importlib.reload(common)
-importlib.reload(header)
 
 from common import *
 from header import *
@@ -21,8 +18,7 @@ neural = neural.to(common.device)
 
 neural.eval()
 Y = predict(neural,images)
-Y_cats = gettop1(Y)
-mean_Y_top = (Y_cats == labels).double().mean()
+mean_Y_top = (Y.topk(1,dim=1)[1] == labels[:,None]).double().mean()
 print('%s | top1: %5.2f' % (archname, 100*mean_Y_top))
 
 layers = findlayers(neural,(transconv.QWConv2d))
@@ -75,7 +71,8 @@ for l in range(0,len(layers)):
                     if b == 0:
                         break
 
-                    if mean_Y_sse > last_Y_sse and \
+                    if b >= 2 and \
+                       mean_Y_sse > last_Y_sse and \
                        mean_W_sse > last_W_sse:
                         break
 
