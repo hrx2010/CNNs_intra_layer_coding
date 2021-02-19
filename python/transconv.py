@@ -27,7 +27,7 @@ class QAConv2d(nn.Module):
     class Quantize(torch.autograd.Function):
         @staticmethod
         def forward(ctx, input, delta, coded):
-            return common.quantize(input, 2**delta[0], coded[0]/input[0,:].numel())
+            return common.quantize(input, 2**delta[0], coded[0]/input[0,:].numel(), centered=True)
 
         @staticmethod
         def backward(ctx, grad_output):

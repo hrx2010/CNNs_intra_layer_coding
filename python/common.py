@@ -161,13 +161,13 @@ def inv(perm):
         inverse[p] = i
     return inverse
 
-def quantize(weights, delta, b):
+def quantize(weights, delta, b, centered=False):
     if b == Inf:
         return weights
 
     if b > 0:
-        minpoint = -(2**(b-1))*delta
-        maxpoint =  (2**(b-1) - 1)*delta
+        minpoint = -(2**(b-1))*delta + centered*weights.mean().float()
+        maxpoint =  (2**(b-1) - 1)*delta + centered*weights.mean().float()
     else:
         minpoint = 0
         maxpoint = 0

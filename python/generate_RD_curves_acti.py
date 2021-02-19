@@ -36,7 +36,7 @@ for l in range(0,len(layers)):
 
         scale = 0
         coded = Inf
-        start = scale 
+        start = scale
         for b in range(0,maxrates):
             last_Y_sse = Inf
             last_W_sse = Inf
@@ -58,8 +58,7 @@ for l in range(0,len(layers)):
                 #mean_W_sse = acti_W_sse[b,j,0]
                 mean_coded = acti_coded[b,j,0]
                 
-                #print('%d, %d, %f' % (b, j, acti_Y_sse[b,j,0]))
-                if b >= 2 and mean_Y_sse > last_Y_sse or\
+                if mean_Y_sse >= last_Y_sse or\
                    b == 0:
                     break
 
@@ -68,7 +67,7 @@ for l in range(0,len(layers)):
 
             _,  j = acti_Y_sse[b,:,0].min(0)
             delta = acti_delta[b,j,0]
-            start = delta - 2
+            start = float(delta - 2)
             mean_Y_sse = acti_Y_sse[b,j,0]
             mean_Y_top = acti_Y_top[b,j,0]
             print('%s | layer: %03d/%03d, delta: %+6.2f, '
