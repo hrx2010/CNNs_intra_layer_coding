@@ -36,7 +36,7 @@ for l in range(0,len(layers)):
 
         scale = 0
         coded = Inf
-        start = scale
+        start = scale + 2
         for b in range(0,maxrates):
             last_Y_sse = Inf
             last_W_sse = Inf
