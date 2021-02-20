@@ -59,11 +59,11 @@ def quantize_slope_2d(neural, archname, slope, codekern, codeacti, a_dimens=None
                 hist_sum_coded = hist_sum_coded + kern_coded[i]
 
         if codeacti:
-            hist_sum_denom = hist_sum_denom + a_dimens[l].prod()
+            hist_sum_denom = hist_sum_denom + a_dimens[l]
             acti_Y_sse, acti_delta, acti_coded = loadrdcurves(archname,'idt','inter',l, 'acti')
             acti_Y_sse, acti_delta, acti_coded = findrdpoints(acti_Y_sse,acti_delta,acti_coded, 2**slope)
-            stride = a_layers[l].get_bandwidth()
-            for i in range(0,a_layers[l].num_bands(),stride):
+
+            for i in range(0,1):#a_layers[l].num_bands(),stride):
                 a_layers[l].is_quantized = True
                 a_layers[l].coded[i] = acti_coded[i]
                 a_layers[l].delta[i] = acti_delta[i]

@@ -210,8 +210,8 @@ def replaceconv(net,layers,includenorm=True):
     pushconv([layers],net,includenorm,direction=1)
     return net
 
-def hooklayers(net, classes):
-    layers = findlayers(net, classes)
+def hooklayers(layers):
+    #layers = findlayers(net, classes)
     return [Hook(layer) for layer in layers]
 
 def findconv(net,includenorm=True):
@@ -335,7 +335,7 @@ class Hook():
         else:
             self.hook = module.register_backward_hook(self.hook_fn)
     def hook_fn(self, module, input, output):
-        self.input = torch.tensor(input[0].shape[1:])
-        self.output = torch.tensor(output[0].shape[1:])
+        self.input = input[0]
+        self.output = output
     def close(self):
         self.hook.remove()

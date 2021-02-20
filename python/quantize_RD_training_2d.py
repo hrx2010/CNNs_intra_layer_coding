@@ -20,13 +20,13 @@ neural, images, labels, images_val, labels_val= loadnetwork(archname,testsize)
 network.quantize_2d(neural)
 neural = neural.to(common.device)
 
-a_dimens = hooklayers(neural,transconv.QAConv2d)
+a_dimens = hooklayers(findlayers(neural,transconv.QAConv2d))
 
 neural.eval()
 Y = predict(neural,images_val)
 mean_Y_tp1 = (Y.topk(1,dim=1)[1] == labels_val[:,None]).double().sum(1).mean()
 mean_Y_tp5 = (Y.topk(5,dim=1)[1] == labels_val[:,None]).double().sum(1).mean()
-a_dimens = [a_dimens[i].input for i in range(0,len(a_dimens))]
+a_dimens = [a_dimens[i].input[0].numel() for i in range(0,len(a_dimens))]
 
 print('%s | topk: %5.2f (%5.2f)' % (archname, 100*mean_Y_tp1, 100*mean_Y_tp5))
 

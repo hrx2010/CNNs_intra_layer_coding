@@ -25,7 +25,7 @@ tarnet = convert_qconv(tarnet)
 
 srclayers = findlayers(srcnet,nn.Conv2d)
 tarlayers = findlayers(tarnet,transconv.QAConv2d)
-tardimens = hooklayers(tarnet,transconv.QAConv2d)
+tardimens = hooklayers(findlayers(tarnet,transconv.QAConv2d))
 
 perm, flip = getperm(trantype)
 
@@ -35,7 +35,7 @@ Y_cat1 = gettopk(Y,1)
 Y_cat5 = gettopk(Y,5)
 mean_Y_tp1 = (Y_cat1 == labels[:,None]).double().sum(1).mean()
 mean_Y_tp5 = (Y_cat5 == labels[:,None]).double().sum(1).mean()
-dimens = [tardimens[i].input for i in range(0,len(tardimens))]
+dimens = [tardimens[i].input[0].numel() for i in range(0,len(tardimens))]
 
 print('%s %s | topk: %5.2f (%5.2f)' % (archname, tranname, 100*mean_Y_tp1, 100*mean_Y_tp5))
 
@@ -91,7 +91,7 @@ for j in range(0,maxsteps):
             if codeacti and srclayers[l].groups >= 1:
                 pred_sum_Y_sse[j] = pred_sum_Y_sse[j] + acti_Y_sse[0]
                 hist_sum_coded[j] = hist_sum_coded[j] + acti_coded[0]
-                hist_sum_denom[j] = hist_sum_denom[j] + dimens[l].prod()
+                hist_sum_denom[j] = hist_sum_denom[j] + dimens[l]
                 tarlayers[l].quantized, tarlayers[l].coded, tarlayers[l].delta = True, acti_coded, acti_delta
             layer_weights = basis_vectors[:,:,1].mm(trans_weights)
             layer_weights = layer_weights.permute(inv(flip)).reshape(dimen_weights).permute(inv(perm)).\
